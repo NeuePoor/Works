@@ -1,143 +1,205 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Works - Portfolio</title>
+    <title>Works - 3D 模型预览</title>
+    <!-- 引入用于渲染 3D 模型的 Google model-viewer 脚本 -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
     <style>
         body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #ffffff;
             margin: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #ffffff;
-            color: #111;
+            padding: 40px 20px;
+            color: #1a1a1a;
+            /* 优化移动端滚动体验 */
+            -webkit-tap-highlight-color: transparent;
         }
 
-        header {
-            padding: 40px;
-            font-size: 28px;
-            font-weight: 600;
+        h1 {
+            font-weight: 300;
+            margin-bottom: 50px;
+            letter-spacing: 1px;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            grid-auto-rows: 160px;
-            gap: 20px;
-            padding: 40px;
+        .gallery {
+            max-width: 1000px;
+            margin: 0 auto;
         }
 
-        .project {
-            position: relative;
-            display: block;
+        /* 统一的作品项容器 */
+        .gallery-item {
+            width: 100%;
+            margin-bottom: 40px;
+            background-color: #fcfcfc;
+            border-radius: 16px;
             overflow: hidden;
-            border-radius: 6px;
-            text-decoration: none;
-            color: white;
-            font-size: 18px;
-            transition: transform 0.25s ease;
-        }
-
-        .project span {
-            position: absolute;
-            bottom: 14px;
-            left: 14px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .project:hover {
-            transform: scale(1.03);
-        }
-
-        /* Grid Sizing */
-        .large { grid-column: span 3; grid-row: span 3; }
-        .medium { grid-column: span 2; grid-row: span 2; }
-        .small { grid-column: span 1; grid-row: span 1; }
-        .wide { grid-column: span 3; grid-row: span 1; }
-        .tall { grid-column: span 1; grid-row: span 3; }
-
-        .textblock {
-            grid-column: span 2;
-            grid-row: span 2;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
-            background: #f4f4f4;
-            color: #111;
-            font-size: 20px;
-            padding: 20px;
-            line-height: 1.4;
-            text-align: center;
+            align-items: center;
+            border: 1px solid #f0f0f0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        /* Colors */
-        .color1 { background: #ff6b6b; }
-        .color2 { background: #6bc5ff; }
-        .color3 { background: #6bff95; }
-        .color4 { background: #ffc96b; }
-        .color5 { background: #b06bff; }
-        .color6 { background: #ff6bd6; }
-        .color7 { background: #7d7d7d; }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-            .grid {
-                grid-template-columns: repeat(3, 1fr);
-                grid-auto-rows: 140px;
-                padding: 20px;
+        /* PC 端悬停效果 */
+        @media (hover: hover) {
+            .gallery-item:hover {
+                box-shadow: 0 12px 40px rgba(0,0,0,0.06);
             }
-            .large { grid-column: span 3; }
-            .medium { grid-column: span 2; }
-            .wide { grid-column: span 2; }
-            .textblock { grid-column: span 3; grid-row: span 1; }
+        }
+
+        /* 3D 模型播放器 */
+        model-viewer {
+            width: 100%;
+            height: 550px;
+            background-color: #fcfcfc;
+            --poster-color: transparent;
+            outline: none;
+            /* 确保触摸操作仅限于模型交互 */
+            touch-action: pan-y;
+        }
+
+        /* 图片占位样式 */
+        .gallery-item img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 交互提示 */
+        .model-info {
+            padding: 15px 20px;
+            font-size: 0.8rem;
+            color: #999;
+            text-align: center;
+            width: 100%;
+            border-top: 1px solid #f5f5f5;
+            background: #fff;
+        }
+
+        /* 加载中的状态显示 */
+        .progress-bar {
+            display: block;
+            width: 33%;
+            height: 4px;
+            max-height: 2px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 1px;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .update-bar {
+            background-color: rgba(0, 0, 0, 0.4);
+            width: 0%;
+            height: 100%;
+            border-radius: 1px;
+            transition: width 0.3s;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 15px;
+            }
+            model-viewer {
+                height: 400px; /* 手机端适当缩小高度 */
+            }
+            h1 {
+                margin-bottom: 30px;
+            }
         }
     </style>
 </head>
 <body>
 
-<header>Works</header>
+    <h1>Works</h1>
 
-<main class="grid">
-    <a class="project large color1" href="/works/2503001/">
-        <span>2503001</span>
-    </a>
+    <section class="gallery">
+        
+        <!-- 3D 模型展示项 -->
+        <div class="gallery-item">
+            <!-- 
+                交互方案调整说明：
+                1. disable-zoom: 禁用缩放。在手机端滚动页面时，若不禁用缩放，用户双指操作会误放大模型。
+                2. touch-action="pan-y": 允许用户在触摸模型时仍能上下滑动页面。
+                3. interaction-prompt="auto": 仅在用户长时间未操作时给予轻微提示。
+            -->
+            <model-viewer 
+                id="candle-viewer"
+                src="https://folio.neuepoor.com/candle-v1.glb" 
+                alt="Candle v1 3D Model"
+                auto-rotate
+                rotation-per-second="30deg"
+                camera-controls
+                disable-zoom
+                interaction-prompt="auto"
+                shadow-intensity="1.5"
+                environment-image="neutral"
+                exposure="1.2"
+                crossorigin="anonymous">
+                
+                <!-- 自定义加载进度条 -->
+                <div class="progress-bar" slot="progress-bar">
+                    <div class="update-bar"></div>
+                </div>
+            </model-viewer>
+            <div class="model-info">
+                <!-- 针对不同设备的动态提示文字 -->
+                <span class="pc-hint">鼠标拖拽 360° 旋转</span>
+                <span class="mobile-hint" style="display:none;">单指旋转，双指移动视角</span>
+            </div>
+        </div>
 
-    <a class="project medium color2" href="/works/2503002/">
-        <span>2503002</span>
-    </a>
+        <br/><br/>
 
-    <a class="project small color3" href="/works/2503003/">
-        <span>2503003</span>
-    </a>
+        <div class="gallery-item">
+            <br/>
+            <img src="" alt="等待添加的作品图片">
+            <br/>
+        </div>
 
-    <a class="project tall color4" href="/works/2503004/">
-        <span>2503004</span>
-    </a>
+        <br/><br/>
 
-    <div class="textblock">
-        Experimental Typography<br>and Interactive Projects
-    </div>
+        <div class="gallery-item">
+            <br/>
+            <img src="" alt="等待添加的作品图片">
+            <br/>
+        </div>
 
-    <a class="project wide color5" href="/works/2503005/">
-        <span>2503005</span>
-    </a>
+    </section>
 
-    <a class="project medium color6" href="/works/2503006/">
-        <span>2503006</span>
-    </a>
+    <script>
+        const modelViewer = document.querySelector('#candle-viewer');
+        const progressBar = document.querySelector('.update-bar');
+        const pcHint = document.querySelector('.pc-hint');
+        const mobileHint = document.querySelector('.mobile-hint');
 
-    <a class="project small color7" href="/works/2503007/">
-        <span>2503007</span>
-    </a>
+        // 检测触摸设备并切换提示语
+        if ('ontouchstart' in window) {
+            pcHint.style.display = 'none';
+            mobileHint.style.display = 'inline';
+        }
 
-    <a class="project medium color1" href="/works/2503008/">
-        <span>2503008</span>
-    </a>
+        // 处理加载进度条逻辑
+        modelViewer.addEventListener('progress', (event) => {
+            const progress = event.detail.totalProgress;
+            progressBar.style.width = `${progress * 100}%`;
+            if (progress === 1) {
+                setTimeout(() => {
+                    progressBar.parentElement.style.display = 'none';
+                }, 300);
+            }
+        });
 
-    <a class="project wide color2" href="/works/2503009/">
-        <span>2503009</span>
-    </a>
-</main>
+        // 错误处理提示
+        modelViewer.addEventListener('error', () => {
+            console.error("无法加载模型。请检查 R2 的 CORS 设置是否允许此域名的访问。");
+        });
+    </script>
 
 </body>
 </html>
