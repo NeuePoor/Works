@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.2 (Elastic Animation & Chrome Pull-to-refresh Fix)
+  版本: v3.3 (Cross-Browser Layout Stability)
   
   核心变更:
-  - 为移动端导航栏增加 scale 缩放与贝塞尔曲线，实现果冻动画感。
-  - 修复 Chrome 移动端下拉刷新导致的导航栏变形（overscroll-behavior-y: none）。
-  - 优化 transform 性能，开启 will-change。
+  - 修复 Chrome/微信下的导航栏形变：锁定高度并优化安全区定位逻辑。
+  - 彻底解决 Safari 底部遮挡：全局 body 强制使用 dvh 单位。
+  - 优化弹性动画：微调曲线，平衡果冻感与渲染稳定性。
 -->
-<title>Folio | v3.2</title>
+<title>Folio | v3.3</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
 <style>
@@ -26,13 +26,13 @@
     --fl-gutter: 4px; 
     --fl-margin: 4px;
     --fl-nav-h: 60px;
-    --fl-nav-h-m: 35px;
+    --fl-nav-h-m: 44px; /* 锁定移动端高度 */
     --fl-font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
     --fl-reveal-dist: 20px;
     --fl-reveal-dur: 0.8s;
     --fl-ease: cubic-bezier(0.23, 1, 0.32, 1);
-    /* 果冻感贝塞尔曲线 */
-    --fl-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    /* 优化后的弹性曲线：减小幅度，增强稳定性 */
+    --fl-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -74,9 +74,10 @@
     padding: 0; 
     background: var(--fl-bg); 
     overflow-x: hidden; 
+    /* 全局动态视口适配 */
     min-height: 100vh; 
     min-height: 100dvh; 
-    /* 修复 Chrome 下拉刷新导致的固定定位元素位移拉伸问题 */
+    /* 锁定 Chrome 下拉锁定 */
     overscroll-behavior-y: none;
   }
 
@@ -107,27 +108,27 @@
     .fl-grid { padding-top: 20px; }
     .fl-header {
       top: auto; 
-      bottom: 12px; 
+      /* 将安全区域补偿移至 bottom 属性，防止容器高度被拉伸 */
+      bottom: calc(12px + env(safe-area-inset-bottom)); 
       left: 12px;
       width: calc(100% - 24px); 
-      height: auto; 
-      min-height: var(--fl-nav-h-m);
-      padding: 0 16px; 
-      padding-bottom: env(safe-area-inset-bottom);
+      /* 锁定高度，严禁 auto */
+      height: var(--fl-nav-h-m) !important; 
+      padding: 0 16px !important; 
       border-radius: 10px;
       background: var(--fl-nav-bg-m); 
       backdrop-filter: blur(20px) saturate(180%); 
       border: 0.5px solid rgba(0,0,0,0.08);
       mix-blend-mode: normal; 
-      /* 切换为果冻动画 */
+      /* 强制隐藏溢出保护圆角形状 */
+      overflow: hidden; 
       transition: transform 0.6s var(--fl-elastic), opacity 0.4s ease;
-      /* 开启硬件加速，解决 Chrome 渲染抖动 */
       will-change: transform;
     }
     
     .fl-header.menu-hidden {
-      /* 增加缩放 scale(0.9) 实现包裹感与果冻感 */
-      transform: translateY(calc(100% + 40px)) scale(0.9);
+      /* 确保彻底消失在屏幕底部，包含安全区 */
+      transform: translateY(calc(100% + 40px + env(safe-area-inset-bottom))); 
       opacity: 0;
       pointer-events: none;
     }
@@ -173,12 +174,13 @@
   @media (max-width: 768px) {
     .fl-item-wrapper { grid-column: span 12 !important; margin-bottom: 28px; }
     .fl-item { 
+      /* 同步使用 dvh 保持动态高度感 */
       height: 60vh; 
       height: 60dvh; 
       order: 2; 
     }
     .type-item-container { order: 1; margin: 0 0 var(--fl-gutter) 0; display: block; mix-blend-mode: normal; }
-    .type-item { color: var(--fl-text); opacity: 0; transform: translateY(10px); display: block; }
+    .type-item { color: var(--text); opacity: 0; transform: translateY(10px); display: block; }
     .fl-item-wrapper.is-visible .type-item { opacity: 1; transform: translateY(0); transition-delay: 0.15s; }
     .fl-archive-wrapper { margin-top: 20px; }
   }
