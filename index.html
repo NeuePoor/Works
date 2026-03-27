@@ -5,15 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.1 (Dynamic Viewport & Safe Area Fix)
+  版本: v3.2 (Elastic Animation & Chrome Pull-to-refresh Fix)
   
   核心变更:
-  - 使用 dvh 单位替代 vh，适配 Safari 动态工具栏。
-  - 增加 env(safe-area-inset-bottom) 适配 iOS 底部安全区。
-  - 优化移动端卡片高度，防止滑动跳变。
-  - 保持 PC 端顶部导航 mix-blend-mode 逻辑。
+  - 为移动端导航栏增加 scale 缩放与贝塞尔曲线，实现果冻动画感。
+  - 修复 Chrome 移动端下拉刷新导致的导航栏变形（overscroll-behavior-y: none）。
+  - 优化 transform 性能，开启 will-change。
 -->
-<title>Folio | v3.1</title>
+<title>Folio | v3.2</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
 <style>
@@ -32,6 +31,8 @@
     --fl-reveal-dist: 20px;
     --fl-reveal-dur: 0.8s;
     --fl-ease: cubic-bezier(0.23, 1, 0.32, 1);
+    /* 果冻感贝塞尔曲线 */
+    --fl-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -73,9 +74,10 @@
     padding: 0; 
     background: var(--fl-bg); 
     overflow-x: hidden; 
-    /* 适配动态视口高度，防止 Safari 底部留白 */
     min-height: 100vh; 
     min-height: 100dvh; 
+    /* 修复 Chrome 下拉刷新导致的固定定位元素位移拉伸问题 */
+    overscroll-behavior-y: none;
   }
 
   .fl-grid {
@@ -105,24 +107,27 @@
     .fl-grid { padding-top: 20px; }
     .fl-header {
       top: auto; 
-      /* 底部定位配合安全区域 padding */
       bottom: 12px; 
       left: 12px;
       width: calc(100% - 24px); 
       height: auto; 
       min-height: var(--fl-nav-h-m);
       padding: 0 16px; 
-      /* 增加 iOS 底部触控条适配 */
       padding-bottom: env(safe-area-inset-bottom);
       border-radius: 10px;
       background: var(--fl-nav-bg-m); 
       backdrop-filter: blur(20px) saturate(180%); 
       border: 0.5px solid rgba(0,0,0,0.08);
       mix-blend-mode: normal; 
+      /* 切换为果冻动画 */
+      transition: transform 0.6s var(--fl-elastic), opacity 0.4s ease;
+      /* 开启硬件加速，解决 Chrome 渲染抖动 */
+      will-change: transform;
     }
     
     .fl-header.menu-hidden {
-      transform: translateY(calc(100% + 20px));
+      /* 增加缩放 scale(0.9) 实现包裹感与果冻感 */
+      transform: translateY(calc(100% + 40px)) scale(0.9);
       opacity: 0;
       pointer-events: none;
     }
@@ -168,7 +173,6 @@
   @media (max-width: 768px) {
     .fl-item-wrapper { grid-column: span 12 !important; margin-bottom: 28px; }
     .fl-item { 
-      /* 移动端使用 dvh 确保在工具栏变化时比例稳定 */
       height: 60vh; 
       height: 60dvh; 
       order: 2; 
