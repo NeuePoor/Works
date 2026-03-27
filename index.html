@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.3 (Cross-Browser Layout Stability)
+  版本: v3.5 (Refined Scroll Delay)
   
   核心变更:
-  - 修复 Chrome/微信下的导航栏形变：锁定高度并优化安全区定位逻辑。
-  - 彻底解决 Safari 底部遮挡：全局 body 强制使用 dvh 单位。
-  - 优化弹性动画：微调曲线，平衡果冻感与渲染稳定性。
+  - 调整滚动停止检测延迟为 250ms，提升交互优雅度。
+  - 延续 v3.4 的状态触发逻辑与物理尺寸锁定。
 -->
-<title>Folio | v3.3</title>
+<title>Folio | v3.5</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
 <style>
@@ -26,13 +25,11 @@
     --fl-gutter: 4px; 
     --fl-margin: 4px;
     --fl-nav-h: 60px;
-    --fl-nav-h-m: 44px; /* 锁定移动端高度 */
+    --fl-nav-h-m: 44px; 
     --fl-font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
     --fl-reveal-dist: 20px;
     --fl-reveal-dur: 0.8s;
     --fl-ease: cubic-bezier(0.23, 1, 0.32, 1);
-    /* 优化后的弹性曲线：减小幅度，增强稳定性 */
-    --fl-elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -74,10 +71,8 @@
     padding: 0; 
     background: var(--fl-bg); 
     overflow-x: hidden; 
-    /* 全局动态视口适配 */
     min-height: 100vh; 
     min-height: 100dvh; 
-    /* 锁定 Chrome 下拉锁定 */
     overscroll-behavior-y: none;
   }
 
@@ -108,29 +103,26 @@
     .fl-grid { padding-top: 20px; }
     .fl-header {
       top: auto; 
-      /* 将安全区域补偿移至 bottom 属性，防止容器高度被拉伸 */
       bottom: calc(12px + env(safe-area-inset-bottom)); 
       left: 12px;
       width: calc(100% - 24px); 
-      /* 锁定高度，严禁 auto */
       height: var(--fl-nav-h-m) !important; 
       padding: 0 16px !important; 
       border-radius: 10px;
       background: var(--fl-nav-bg-m); 
+      background-attachment: scroll; 
       backdrop-filter: blur(20px) saturate(180%); 
       border: 0.5px solid rgba(0,0,0,0.08);
       mix-blend-mode: normal; 
-      /* 强制隐藏溢出保护圆角形状 */
       overflow: hidden; 
-      transition: transform 0.6s var(--fl-elastic), opacity 0.4s ease;
-      will-change: transform;
+      transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.4s linear;
+      will-change: transform, opacity;
     }
     
     .fl-header.menu-hidden {
-      /* 确保彻底消失在屏幕底部，包含安全区 */
-      transform: translateY(calc(100% + 40px + env(safe-area-inset-bottom))); 
+      transform: translateY(calc(100% + 60px)); 
       opacity: 0;
-      pointer-events: none;
+      pointer-events: none; 
     }
 
     .fl-header .type-nav { color: var(--fl-text); } 
@@ -174,13 +166,12 @@
   @media (max-width: 768px) {
     .fl-item-wrapper { grid-column: span 12 !important; margin-bottom: 28px; }
     .fl-item { 
-      /* 同步使用 dvh 保持动态高度感 */
       height: 60vh; 
       height: 60dvh; 
       order: 2; 
     }
     .type-item-container { order: 1; margin: 0 0 var(--fl-gutter) 0; display: block; mix-blend-mode: normal; }
-    .type-item { color: var(--text); opacity: 0; transform: translateY(10px); display: block; }
+    .type-item { color: var(--fl-text); opacity: 0; transform: translateY(10px); display: block; }
     .fl-item-wrapper.is-visible .type-item { opacity: 1; transform: translateY(0); transition-delay: 0.15s; }
     .fl-archive-wrapper { margin-top: 20px; }
   }
@@ -273,27 +264,21 @@
       },
 
       initScrollMonitor() {
-        let lastScrollY = window.scrollY;
-        const threshold = 10; 
+        let scrollTimer = null;
         const navbar = document.getElementById('navbar');
 
         window.addEventListener('scroll', () => {
-          if (window.innerWidth > 768) {
+          if (window.innerWidth > 768) return;
+
+          // 只要在滚动，就立即隐藏导航栏
+          navbar.classList.add('menu-hidden');
+
+          clearTimeout(scrollTimer);
+
+          // 调整为 250ms，让交互感更从容
+          scrollTimer = setTimeout(() => {
             navbar.classList.remove('menu-hidden');
-            return;
-          }
-
-          const currentScrollY = window.scrollY;
-          const diff = currentScrollY - lastScrollY;
-
-          if (Math.abs(diff) > threshold) {
-            if (diff > 0 && currentScrollY > 100) {
-              navbar.classList.add('menu-hidden');
-            } else {
-              navbar.classList.remove('menu-hidden');
-            }
-            lastScrollY = currentScrollY;
-          }
+          }, 250);
         }, { passive: true });
       },
 
