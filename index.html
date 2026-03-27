@@ -1,205 +1,330 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Works - 3D 模型预览</title>
-    <!-- 引入用于渲染 3D 模型的 Google model-viewer 脚本 -->
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #ffffff;
-            margin: 0;
-            padding: 40px 20px;
-            color: #1a1a1a;
-            /* 优化移动端滚动体验 */
-            -webkit-tap-highlight-color: transparent;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<!-- 
+  项目名称: Folio Design System
+  版本: v3.0 (Mobile Scroll Reveal)
+  
+  核心变更:
+  - 增加移动端导航栏滑动显隐逻辑。
+  - 10px 灵敏度阈值，防止误触。
+  - 使用 transform: translateY 保证 60fps 流畅度。
+-->
+<title>Folio | v3.0</title>
+<link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
-        h1 {
-            font-weight: 300;
-            margin-bottom: 50px;
-            letter-spacing: 1px;
-        }
+<style>
+  /* ==========================================================================
+     1. DESIGN TOKENS
+     ========================================================================== */
+  :root {
+    --fl-bg: #fff;
+    --fl-text: #000;
+    --fl-nav-bg-m: rgba(255, 255, 255, 0.7);
+    --fl-gutter: 4px; 
+    --fl-margin: 4px;
+    --fl-nav-h: 60px;
+    --fl-nav-h-m: 35px;
+    --fl-font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+    --fl-reveal-dist: 20px;
+    --fl-reveal-dur: 0.8s;
+    --fl-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  }
 
-        .gallery {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
+  @media (prefers-color-scheme: dark) {
+    :root { 
+      --fl-bg: #000; 
+      --fl-text: #fff; 
+      --fl-nav-bg-m: rgba(28, 28, 30, 0.8); 
+    }
+  }
 
-        /* 统一的作品项容器 */
-        .gallery-item {
-            width: 100%;
-            margin-bottom: 40px;
-            background-color: #fcfcfc;
-            border-radius: 16px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border: 1px solid #f0f0f0;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+  /* ==========================================================================
+     2. TYPOGRAPHY RULES
+     ========================================================================== */
+  html, body { 
+    font-family: var(--fl-font-main); 
+    color: var(--fl-text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.4;
+  }
 
-        /* PC 端悬停效果 */
-        @media (hover: hover) {
-            .gallery-item:hover {
-                box-shadow: 0 12px 40px rgba(0,0,0,0.06);
-            }
-        }
+  .type-nav { font-size: var(--fl-fs-nav); font-weight: 700; letter-spacing: -0.05em; text-decoration: none; color: #fff; }
+  .type-info { font-size: var(--fl-fs-info); line-height: var(--fl-lh-info); opacity: var(--fl-op-info); }
+  .type-item { font-size: var(--fl-fs-item); font-weight: 600; transition: opacity 0.6s var(--fl-ease), transform 0.6s var(--fl-ease); }
+  .type-archive { font-size: 10px; font-weight: 600; text-decoration: none; color: var(--fl-text); transition: opacity 0.3s; }
+  .type-archive:hover { opacity: 0.5; }
 
-        /* 3D 模型播放器 */
-        model-viewer {
-            width: 100%;
-            height: 550px;
-            background-color: #fcfcfc;
-            --poster-color: transparent;
-            outline: none;
-            /* 确保触摸操作仅限于模型交互 */
-            touch-action: pan-y;
-        }
+  @media (max-width: 768px) {
+    .type-nav { font-size: var(--fl-fs-nav-m); }
+    .type-info { font-size: var(--fl-fs-info-m); }
+    .type-item { font-size: var(--fl-fs-item-m); }
+  }
 
-        /* 图片占位样式 */
-        .gallery-item img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-        }
+  /* ==========================================================================
+     3. LAYOUT & COMPONENTS
+     ========================================================================== */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; padding: 0; background: var(--fl-bg); overflow-x: hidden; min-height: 100vh; }
 
-        /* 交互提示 */
-        .model-info {
-            padding: 15px 20px;
-            font-size: 0.8rem;
-            color: #999;
-            text-align: center;
-            width: 100%;
-            border-top: 1px solid #f5f5f5;
-            background: #fff;
-        }
+  .fl-grid {
+    display: grid; 
+    grid-template-columns: repeat(12, 1fr);
+    gap: var(--fl-gutter); 
+    margin: var(--fl-margin);
+    padding: 80px 0 120px;
+  }
 
-        /* 加载中的状态显示 */
-        .progress-bar {
-            display: block;
-            width: 33%;
-            height: 4px;
-            max-height: 2px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 1px;
-            background-color: rgba(0, 0, 0, 0.1);
-        }
-        .update-bar {
-            background-color: rgba(0, 0, 0, 0.4);
-            width: 0%;
-            height: 100%;
-            border-radius: 1px;
-            transition: width 0.3s;
-        }
+  .fl-header {
+    position: fixed; width: 100%; z-index: 999;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 4px; height: var(--fl-nav-h); top: 0;
+    mix-blend-mode: difference;
+    /* 增加平滑位移动画 */
+    transition: transform 0.5s var(--fl-ease), opacity 0.5s var(--fl-ease);
+  }
 
-        /* 响应式调整 */
-        @media (max-width: 768px) {
-            body {
-                padding: 20px 15px;
-            }
-            model-viewer {
-                height: 400px; /* 手机端适当缩小高度 */
-            }
-            h1 {
-                margin-bottom: 30px;
-            }
-        }
-    </style>
+  .fl-logo { height: 100%; display: flex; align-items: center; text-decoration: none; color: inherit; }
+  .fl-logo__video, .fl-logo__gif { height: 48px; width: auto; display: none; }
+
+  .fl-nav { display: flex; gap: 40px; }
+  .fl-nav__link { transition: opacity 0.3s; }
+  .fl-nav__link:hover { opacity: 0.3; }
+
+  @media (max-width: 768px) {
+    .fl-grid { padding-top: 20px; }
+    .fl-header {
+      top: auto; bottom: 12px; left: 12px;
+      width: calc(100% - 24px); height: var(--fl-nav-h-m);
+      padding: 0 16px; border-radius: 10px;
+      background: var(--fl-nav-bg-m); 
+      backdrop-filter: blur(20px) saturate(180%); 
+      border: 0.5px solid rgba(0,0,0,0.08);
+      mix-blend-mode: normal; 
+    }
+    
+    /* 移动端隐藏状态：向下位移并淡出 */
+    .fl-header.menu-hidden {
+      transform: translateY(80px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .fl-header .type-nav { color: var(--fl-text); } 
+    .fl-logo__video, .fl-logo__gif { height: 18px; }
+  }
+
+  .fl-info { margin-bottom: 20px; word-break: break-word; }
+  .fl-info__title { display: block; margin-bottom: var(--fl-info-title-gap); font-weight: normal; }
+
+  /* 作品项 */
+  .fl-item-wrapper { position: relative; display: flex; flex-direction: column; }
+  .fl-item {
+    width: 100%; height: 45vh; border-radius: 4px; text-decoration: none;
+    transition: transform 0.6s var(--fl-ease); overflow: hidden;
+    position: relative; background-size: cover; background-position: center; background-color: #f5f5f5;
+  }
+
+  .span-1 { grid-column: span 12; }
+  .span-2 { grid-column: span 8; }
+  .span-3 { grid-column: span 4; }
+  .span-4 { grid-column: span 6; }
+  .span-5 { grid-column: span 6; }
+  .span-6 { grid-column: span 3; }
+  .span-7 { grid-column: span 9; }
+
+  .fl-archive-wrapper { grid-column: span 12; margin-top: 40px; display: flex; align-items: center; }
+
+  @media (min-width: 769px) {
+    .type-item-container {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      mix-blend-mode: difference; z-index: 2; pointer-events: none;
+    }
+    .type-item { color: #fff; opacity: 0; transform: translateY(5px); }
+    .fl-item-wrapper:hover .type-item { opacity: 1; transform: translateY(0); }
+    .fl-item-wrapper:hover .fl-item { transform: scale(0.995); }
+  }
+
+  @media (max-width: 768px) {
+    .fl-item-wrapper { grid-column: span 12 !important; margin-bottom: 28px; }
+    .fl-item { height: 60vh; order: 2; }
+    .type-item-container { order: 1; margin: 0 0 var(--fl-gutter) 0; display: block; mix-blend-mode: normal; }
+    .type-item { color: var(--fl-text); opacity: 0; transform: translateY(10px); display: block; }
+    .fl-item-wrapper.is-visible .type-item { opacity: 1; transform: translateY(0); transition-delay: 0.15s; }
+    .fl-archive-wrapper { margin-top: 20px; }
+  }
+
+  .fl-reveal {
+    opacity: 0; transform: translateY(var(--fl-reveal-dist));
+    transition: opacity var(--fl-reveal-dur) var(--fl-ease), transform var(--fl-reveal-dur) var(--fl-ease);
+    will-change: transform, opacity;
+  }
+  .fl-reveal.is-visible { opacity: 1; transform: translateY(0); }
+</style>
 </head>
 <body>
 
-    <h1>Works</h1>
+  <header class="fl-header" id="navbar">
+    <a href="/" class="fl-logo" id="logo">
+      <video class="fl-logo__video" id="v" autoplay loop muted playsinline webkit-playsinline preload="auto"></video>
+      <img class="fl-logo__gif" id="g" alt="Logo">
+      <span class="fl-logo__text type-nav" id="t">Fo</span>
+    </a>
+    <nav class="fl-nav" id="ls"></nav>
+  </header>
 
-    <section class="gallery">
-        
-        <!-- 3D 模型展示项 -->
-        <div class="gallery-item">
-            <!-- 
-                交互方案调整说明：
-                1. disable-zoom: 禁用缩放。在手机端滚动页面时，若不禁用缩放，用户双指操作会误放大模型。
-                2. touch-action="pan-y": 允许用户在触摸模型时仍能上下滑动页面。
-                3. interaction-prompt="auto": 仅在用户长时间未操作时给予轻微提示。
-            -->
-            <model-viewer 
-                id="candle-viewer"
-                src="https://folio.neuepoor.com/candle-v1.glb" 
-                alt="Candle v1 3D Model"
-                auto-rotate
-                rotation-per-second="30deg"
-                camera-controls
-                disable-zoom
-                interaction-prompt="auto"
-                shadow-intensity="1.5"
-                environment-image="neutral"
-                exposure="1.2"
-                crossorigin="anonymous">
-                
-                <!-- 自定义加载进度条 -->
-                <div class="progress-bar" slot="progress-bar">
-                    <div class="update-bar"></div>
-                </div>
-            </model-viewer>
-            <div class="model-info">
-                <!-- 针对不同设备的动态提示文字 -->
-                <span class="pc-hint">鼠标拖拽 360° 旋转</span>
-                <span class="mobile-hint" style="display:none;">单指旋转，双指移动视角</span>
-            </div>
-        </div>
+  <main class="fl-grid" id="main-grid"></main>
 
-        <br/><br/>
-
-        <div class="gallery-item">
-            <br/>
-            <img src="" alt="等待添加的作品图片">
-            <br/>
-        </div>
-
-        <br/><br/>
-
-        <div class="gallery-item">
-            <br/>
-            <img src="" alt="等待添加的作品图片">
-            <br/>
-        </div>
-
-    </section>
-
-    <script>
-        const modelViewer = document.querySelector('#candle-viewer');
-        const progressBar = document.querySelector('.update-bar');
-        const pcHint = document.querySelector('.pc-hint');
-        const mobileHint = document.querySelector('.mobile-hint');
-
-        // 检测触摸设备并切换提示语
-        if ('ontouchstart' in window) {
-            pcHint.style.display = 'none';
-            mobileHint.style.display = 'inline';
+  <script>
+    const SITE_CONFIG = {
+      assets: {
+        logoVideoWebm: "https://folio.neuepoor.com/head_chrome.webm",
+        logoVideoMp4: "https://folio.neuepoor.com/head_safari.mov",
+        logoGif: "https://folio.neuepoor.com/head_chrome.gif"
+      },
+      typography: {
+        nav: { pc: "32px", mobile: "21px" },
+        info: { pc: "10px", mobile: "10px", lineHeight: "1.4", opacity: "0.8", titleBottomGap: "4.2em" },
+        item: { pc: "10px", mobile: "10px" }
+      },
+      navigation: [
+        { name: 'Works', link: 'https://works.neuepoor.com' },
+        { name: '(Play)', link: 'https://play.neuepoor.com' },
+        { name: 'Me', link: 'https://me.neuepoor.com' }
+      ],
+      infoSections: [
+        { title: "Works", content: "Branding<br>Vision identity<br>Look Book<br>Interface<br>Packaging<br>Editorial<br>Apparel", columnSpan: "grid-column: span 6" },
+        { title: "Service", content: "Creative Direction<br>Art Direction<br>Graphic<br>Illustration<br>Motion<br>Typeface", columnSpan: "grid-column: span 4" },
+        { title: "Contacts", content: "Email<br>Instagram<br>Github<br>小红书<br>Wechat", columnSpan: "grid-column: span 2" }
+      ],
+      fallbackProjects: [
+        { 
+          id: "02001", 
+          tag: ["Branding"], 
+          img: "https://folio.neuepoor.com/Me/3.png" 
         }
+      ]
+    };
 
-        // 处理加载进度条逻辑
-        modelViewer.addEventListener('progress', (event) => {
-            const progress = event.detail.totalProgress;
-            progressBar.style.width = `${progress * 100}%`;
-            if (progress === 1) {
-                setTimeout(() => {
-                    progressBar.parentElement.style.display = 'none';
-                }, 300);
+    const DS_ENGINE = {
+      async fetchData() {
+        try {
+          const response = await fetch('./data.json');
+          if (!response.ok) throw new Error('JSON not found');
+          const data = await response.json();
+          return data.slice(0, 7);
+        } catch (e) {
+          console.warn('Using fallback data:', e.message);
+          return Array(7).fill(SITE_CONFIG.fallbackProjects[0]);
+        }
+      },
+
+      initStyles() {
+        const root = document.documentElement;
+        const ty = SITE_CONFIG.typography;
+        root.style.setProperty('--fl-fs-nav', ty.nav.pc);
+        root.style.setProperty('--fl-fs-nav-m', ty.nav.mobile);
+        root.style.setProperty('--fl-fs-info', ty.info.pc);
+        root.style.setProperty('--fl-fs-info-m', ty.info.mobile);
+        root.style.setProperty('--fl-lh-info', ty.info.lineHeight);
+        root.style.setProperty('--fl-op-info', ty.info.opacity);
+        root.style.setProperty('--fl-info-title-gap', ty.info.titleBottomGap);
+        root.style.setProperty('--fl-fs-item', ty.item.pc);
+        root.style.setProperty('--fl-fs-item-m', ty.item.mobile);
+      },
+
+      initLogo() {
+        const v = document.getElementById('v'), g = document.getElementById('g'), t = document.getElementById('t');
+        g.src = SITE_CONFIG.assets.logoGif;
+        v.innerHTML = `<source src="${SITE_CONFIG.assets.logoVideoWebm}" type="video/webm"><source src="${SITE_CONFIG.assets.logoVideoMp4}" type='video/mp4; codecs="hvc1"'>`;
+        v.play().catch(() => { v.style.display = 'none'; g.style.display = 'block'; });
+        v.oncanplay = () => { v.style.display = 'block'; g.style.display = 'none'; t.style.display = 'none'; };
+      },
+
+      // 移动端滚动监听逻辑
+      initScrollMonitor() {
+        let lastScrollY = window.scrollY;
+        const threshold = 10; // 10px 灵敏度阈值
+        const navbar = document.getElementById('navbar');
+
+        window.addEventListener('scroll', () => {
+          // 仅在移动端执行 (屏幕宽度 <= 768px)
+          if (window.innerWidth > 768) {
+            navbar.classList.remove('menu-hidden');
+            return;
+          }
+
+          const currentScrollY = window.scrollY;
+          const diff = currentScrollY - lastScrollY;
+
+          // 只有当滑动距离超过阈值时才触发状态变更
+          if (Math.abs(diff) > threshold) {
+            if (diff > 0 && currentScrollY > 100) {
+              // 向下滑动且不在页面顶部 -> 隐藏
+              navbar.classList.add('menu-hidden');
+            } else {
+              // 向上滑动 -> 显示
+              navbar.classList.remove('menu-hidden');
             }
-        });
+            lastScrollY = currentScrollY;
+          }
+        }, { passive: true });
+      },
 
-        // 错误处理提示
-        modelViewer.addEventListener('error', () => {
-            console.error("无法加载模型。请检查 R2 的 CORS 设置是否允许此域名的访问。");
-        });
-    </script>
+      async renderUI() {
+        const grid = document.getElementById('main-grid');
+        const projects = await this.fetchData();
+        
+        const infoHTML = SITE_CONFIG.infoSections.map(sec => `
+          <div class="fl-info fl-reveal type-info" style="${sec.columnSpan}">
+            <b class="fl-info__title">${sec.title}</b>
+            ${sec.content}
+          </div>
+        `).join('');
+        
+        const galleryHTML = projects.map((item, index) => `
+          <div class="fl-item-wrapper span-${index + 1} fl-reveal">
+            <div class="type-item-container">
+              <span class="type-item">${item.id || 'Project'}</span>
+            </div>
+            <a href="/${item.id}/index.html" class="fl-item" style="background-image:url('${item.img}');"></a>
+          </div>
+        `).join('');
 
+        const archiveHTML = `
+          <div class="fl-archive-wrapper fl-reveal">
+            <a href="/Archive/index.html" class="type-archive">Archive</a>
+          </div>
+        `;
+        
+        grid.innerHTML = infoHTML + galleryHTML + archiveHTML;
+        this.initReveal();
+      },
+
+      initReveal() {
+        const observer = new IntersectionObserver((entries) => { 
+            entries.forEach(entry => { 
+                if (entry.isIntersecting) { 
+                    entry.target.classList.add('is-visible'); 
+                    observer.unobserve(entry.target); 
+                } 
+            }); 
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.fl-reveal').forEach(el => observer.observe(el));
+      },
+
+      start() { 
+        this.initStyles(); 
+        this.initLogo(); 
+        this.initScrollMonitor(); // 启动滚动监听
+        document.getElementById('ls').innerHTML = SITE_CONFIG.navigation.map(n => `<a href="${n.link}" class="fl-nav__link type-nav">${n.name}</a>`).join('');
+        this.renderUI(); 
+      }
+    };
+    DS_ENGINE.start();
+  </script>
 </body>
 </html>
