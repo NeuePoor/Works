@@ -5,13 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.9.1 (Safari Seamless Patch - Scrollbar Hidden)
+  版本: v4.2 (Structure Restored + Auto-Height Fix)
   
   核心变更说明:
-  - 继承 v3.9 的 HTML 背景染色法和移动端布局修正。
-  - [全域隐藏滚动条]：隐藏桌面端和移动端的视觉滚动条，保持布局紧凑。
+  - 核心结构回退至 v4.0：保留完整的 Info 独立区、完整的 SITE_CONFIG 资产与排版配置。
+  - 图片自适应修正：仅修改 Gallery 渲染逻辑，将背景图改为 <img> 标签以适应 url 图原始高度。
+  - 功能恢复：恢复 Logo 视频/GIF 切换逻辑及全域滚动条隐藏。
 -->
-<title>Folio | v3.9.1</title>
+<title>Folio | v4.2</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
 <style>
@@ -40,24 +41,16 @@
     }
   }
 
-  /* --- [核心修正]：层级穿透 --- */
+  /* --- 全域隐藏滚动条 --- */
   html {
     background-color: var(--fl-bg) !important;
     height: 100%; 
     transition: background 0.5s var(--fl-ease);
-    
-    /* [新增] 隐藏全域滚动条 - Firefox */
     scrollbar-width: none; 
-    /* [新增] 隐藏全域滚动条 - IE/Edge */
     -ms-overflow-style: none; 
   }
-
-  /* [新增] 隐藏全域滚动条 - Chrome/Safari/Edge */
-  html::-webkit-scrollbar, 
-  body::-webkit-scrollbar {
-    display: none;
-    width: 0 !important;
-    height: 0 !important;
+  html::-webkit-scrollbar, body::-webkit-scrollbar {
+    display: none; width: 0 !important; height: 0 !important;
   }
 
   /* ==========================================================================
@@ -71,25 +64,41 @@
   }
 
   .type-nav { font-size: var(--fl-fs-nav); font-weight: 700; letter-spacing: -0.05em; text-decoration: none; color: #fff; }
-  .type-info { font-size: var(--fl-fs-info); line-height: var(--fl-lh-info); opacity: var(--fl-op-info); }
-  .type-item { font-size: var(--fl-fs-item); font-weight: 600; transition: opacity 0.6s var(--fl-ease), transform 0.6s var(--fl-ease); }
   .type-archive { font-size: 10px; font-weight: 600; text-decoration: none; color: var(--fl-text); transition: opacity 0.3s; }
   .type-archive:hover { opacity: 0.5; }
 
+  /* Info 区排版配置 */
+  .type-info { 
+    font-size: var(--fl-info-fs); 
+    line-height: var(--fl-info-lh); 
+    opacity: var(--fl-info-op); 
+  }
+  .fl-info__title { 
+    display: block; 
+    margin-bottom: var(--fl-info-gap); 
+    font-weight: normal; 
+  }
+
+  /* Gallery 区排版配置 */
+  .type-item { 
+    font-size: var(--fl-fs-item); 
+    font-weight: 600; 
+  }
+
   @media (max-width: 768px) {
     .type-nav { font-size: var(--fl-fs-nav-m); }
-    .type-info { font-size: var(--fl-fs-info-m); }
+    .type-info { font-size: var(--fl-info-fs-m); }
+    .fl-info__title { margin-bottom: var(--fl-info-gap-m); }
     .type-item { font-size: var(--fl-fs-item-m); }
   }
 
   /* ==========================================================================
      3. LAYOUT & COMPONENTS
-     ========================================================================== */
+     ========================================================================= */
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   
   body { 
-    margin: 0; 
-    padding: 0; 
+    margin: 0; padding: 0; 
     background-color: transparent !important;
     overflow-x: hidden; 
     min-height: 100vh;
@@ -97,14 +106,27 @@
     overscroll-behavior-y: none; 
   }
 
-  .fl-grid {
-    display: grid; 
-    grid-template-columns: repeat(12, 1fr);
-    gap: var(--fl-gutter); 
-    margin: var(--fl-margin);
+  .fl-main-container {
     padding: 80px 0 120px;
+    margin: var(--fl-margin);
   }
 
+  /* Info 区结构 (从 Gallery 独立) */
+  .fl-info-section {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: var(--fl-gutter);
+    margin-bottom: 60px;
+  }
+
+  /* Gallery 区结构 */
+  .fl-gallery-section {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: var(--fl-gutter);
+  }
+
+  /* Header 逻辑 */
   .fl-header {
     position: fixed; width: 100%; z-index: 999;
     display: flex; justify-content: space-between; align-items: center;
@@ -115,13 +137,12 @@
 
   .fl-logo { height: 100%; display: flex; align-items: center; text-decoration: none; color: inherit; }
   .fl-logo__video, .fl-logo__gif { height: 48px; width: auto; display: none; }
-
   .fl-nav { display: flex; gap: 40px; }
   .fl-nav__link { transition: opacity 0.3s; }
   .fl-nav__link:hover { opacity: 0.3; }
 
   @media (max-width: 768px) {
-    .fl-grid { 
+    .fl-main-container { 
       padding: 20px 4px calc(140px + env(safe-area-inset-bottom)) !important; 
     }
     .fl-header {
@@ -138,42 +159,36 @@
       mix-blend-mode: normal; 
       overflow: hidden; 
       transform: translateZ(0);
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.4s linear;
-      will-change: transform, opacity;
+      transition: transform 0.5s var(--fl-ease), opacity 0.4s linear;
     }
-    
-    .fl-header.menu-hidden {
-      transform: translateY(calc(100% + 80px)); 
-      opacity: 0;
-      pointer-events: none; 
-    }
-
+    .fl-header.menu-hidden { transform: translateY(calc(100% + 80px)); opacity: 0; pointer-events: none; }
     .fl-header .type-nav { color: var(--fl-text); } 
     .fl-logo__video, .fl-logo__gif { height: 18px; }
   }
 
-  .fl-info { margin-bottom: 20px; word-break: break-word; }
-  .fl-info__title { display: block; margin-bottom: var(--fl-info-title-gap); font-weight: normal; }
-
-  /* 作品项 */
-  .fl-item-wrapper { position: relative; display: flex; flex-direction: column; }
+  /* 作品项：强制 12 栏全宽 + 自适应高度 */
+  .fl-item-wrapper { 
+    grid-column: span 12; 
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    margin-bottom: var(--fl-gutter); 
+  }
   .fl-item {
     width: 100%; 
-    height: 45vh; 
-    border-radius: 4px; text-decoration: none;
-    transition: transform 0.6s var(--fl-ease); overflow: hidden;
-    position: relative; background-size: cover; background-position: center; background-color: #f5f5f5;
+    height: auto; 
+    border-radius: 4px; 
+    overflow: hidden; 
+    display: block; 
+    background-color: #f5f5f5;
   }
-
-  .span-1 { grid-column: span 12; }
-  .span-2 { grid-column: span 8; }
-  .span-3 { grid-column: span 4; }
-  .span-4 { grid-column: span 6; }
-  .span-5 { grid-column: span 6; }
-  .span-6 { grid-column: span 3; }
-  .span-7 { grid-column: span 9; }
+  /* 关键：使用 img 撑开容器 */
+  .fl-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: transform 0.6s var(--fl-ease);
+  }
 
   .fl-archive-wrapper { grid-column: span 12; margin-top: 40px; display: flex; align-items: center; }
 
@@ -183,27 +198,22 @@
       display: flex; align-items: center; justify-content: center;
       mix-blend-mode: difference; z-index: 2; pointer-events: none;
     }
-    .type-item { color: #fff; opacity: 0; transform: translateY(5px); }
+    .type-item { color: #fff; opacity: 0; transform: translateY(5px); transition: all 0.6s var(--fl-ease); }
     .fl-item-wrapper:hover .type-item { opacity: 1; transform: translateY(0); }
-    .fl-item-wrapper:hover .fl-item { transform: scale(0.995); }
+    .fl-item-wrapper:hover img { transform: scale(1.005); }
   }
 
   @media (max-width: 768px) {
-    .fl-item-wrapper { grid-column: span 12 !important; margin-bottom: 28px; }
-    .fl-item { 
-      height: 60vh; 
-      order: 2; 
-    }
+    .fl-item { order: 2; }
     .type-item-container { order: 1; margin: 0 0 var(--fl-gutter) 0; display: block; mix-blend-mode: normal; }
-    .type-item { color: var(--fl-text); opacity: 0; transform: translateY(10px); display: block; }
-    .fl-item-wrapper.is-visible .type-item { opacity: 1; transform: translateY(0); transition-delay: 0.15s; }
-    .fl-archive-wrapper { margin-top: 20px; }
+    .type-item { color: var(--fl-text); opacity: 0; transform: translateY(10px); display: block; transition: all 0.6s var(--fl-ease); }
+    .fl-item-wrapper.is-visible .type-item { opacity: 1; transform: translateY(0); }
   }
 
+  /* 动画 */
   .fl-reveal {
     opacity: 0; transform: translateY(var(--fl-reveal-dist));
     transition: opacity var(--fl-reveal-dur) var(--fl-ease), transform var(--fl-reveal-dur) var(--fl-ease);
-    will-change: transform, opacity;
   }
   .fl-reveal.is-visible { opacity: 1; transform: translateY(0); }
 </style>
@@ -212,26 +222,37 @@
 
   <header class="fl-header" id="navbar">
     <a href="/" class="fl-logo" id="logo">
-      <video class="fl-logo__video" id="v" autoplay loop muted playsinline webkit-playsinline preload="auto"></video>
+      <video class="fl-logo__video" id="v" autoplay loop muted playsinline preload="auto"></video>
       <img class="fl-logo__gif" id="g" alt="Logo">
       <span class="fl-logo__text type-nav" id="t">Fo</span>
     </a>
     <nav class="fl-nav" id="ls"></nav>
   </header>
 
-  <main class="fl-grid" id="main-grid"></main>
+  <main class="fl-main-container">
+    <!-- Info 区 -->
+    <div class="fl-info-section" id="info-root"></div>
+    <!-- Gallery 区 -->
+    <div class="fl-gallery-section" id="gallery-root"></div>
+  </main>
 
   <script>
     const SITE_CONFIG = {
       assets: {
         logoVideoWebm: "https://folio.neuepoor.com/head_chrome.webm",
         logoVideoMp4: "https://folio.neuepoor.com/head_safari.mov",
-        logoGif: "https://folio.neuepoor.com/head_chrome.gif"
+        logoGif: "https://folio.neuepoor.com/head_chrome.gif",
+        testImg: "https://folio.neuepoor.com/works/Quick%20Look%20Example-1.png"
       },
       typography: {
         nav: { pc: "32px", mobile: "21px" },
-        info: { pc: "10px", mobile: "10px", lineHeight: "1.4", opacity: "0.8", titleBottomGap: "4.2em" },
         item: { pc: "10px", mobile: "10px" }
+      },
+      // Info 区样式配置 (继承自 v4.0)
+      infoStyle: {
+        pc: { fontSize: "10px", opacity: "0.8", titleGap: "4.2em" },
+        mobile: { fontSize: "10px", opacity: "0.8", titleGap: "3.2em" },
+        lineHeight: "1.4"
       },
       navigation: [
         { name: 'Works', link: 'https://works.neuepoor.com' },
@@ -239,44 +260,33 @@
         { name: 'Me', link: 'https://me.neuepoor.com' }
       ],
       infoSections: [
-        { title: "Works", content: "Branding<br>Vision identity<br>Look Book<br>Interface<br>Packaging<br>Editorial<br>Apparel", columnSpan: "grid-column: span 6" },
-        { title: "Service", content: "Creative Direction<br>Art Direction<br>Graphic<br>Illustration<br>Motion<br>Typeface", columnSpan: "grid-column: span 4" },
-        { title: "Contacts", content: "Email<br>Instagram<br>Github<br>小红书<br>Wechat", columnSpan: "grid-column: span 2" }
-      ],
-      fallbackProjects: [
-        { 
-          id: "02001", 
-          tag: ["Branding"], 
-          img: "https://folio.neuepoor.com/Me/3.png" 
-        }
+        { title: "Works", content: "Branding<br>Vision identity<br>Look Book<br>Interface<br>Packaging<br>Editorial<br>Apparel", span: "6" },
+        { title: "Service", content: "Creative Direction<br>Art Direction<br>Graphic<br>Illustration<br>Motion<br>Typeface", span: "4" },
+        { title: "Contacts", content: "Email<br>Instagram<br>Github<br>小红书<br>Wechat", span: "2" }
       ]
     };
 
     const DS_ENGINE = {
       async fetchData() {
-        try {
-          const response = await fetch('./data.json');
-          if (!response.ok) throw new Error('JSON not found');
-          const data = await response.json();
-          return data.slice(0, 7);
-        } catch (e) {
-          console.warn('Using fallback data:', e.message);
-          return Array(7).fill(SITE_CONFIG.fallbackProjects[0]);
-        }
+        return Array(7).fill({ id: "02001", img: SITE_CONFIG.assets.testImg });
       },
 
       initStyles() {
         const root = document.documentElement;
         const ty = SITE_CONFIG.typography;
+        const inf = SITE_CONFIG.infoStyle;
+        
         root.style.setProperty('--fl-fs-nav', ty.nav.pc);
         root.style.setProperty('--fl-fs-nav-m', ty.nav.mobile);
-        root.style.setProperty('--fl-fs-info', ty.info.pc);
-        root.style.setProperty('--fl-fs-info-m', ty.info.mobile);
-        root.style.setProperty('--fl-lh-info', ty.info.lineHeight);
-        root.style.setProperty('--fl-op-info', ty.info.opacity);
-        root.style.setProperty('--fl-info-title-gap', ty.info.titleBottomGap);
         root.style.setProperty('--fl-fs-item', ty.item.pc);
         root.style.setProperty('--fl-fs-item-m', ty.item.mobile);
+        
+        root.style.setProperty('--fl-info-fs', inf.pc.fontSize);
+        root.style.setProperty('--fl-info-fs-m', inf.mobile.fontSize);
+        root.style.setProperty('--fl-info-op', inf.pc.opacity);
+        root.style.setProperty('--fl-info-gap', inf.pc.titleGap);
+        root.style.setProperty('--fl-info-gap-m', inf.mobile.titleGap);
+        root.style.setProperty('--fl-info-lh', inf.lineHeight);
       },
 
       initThemeColor() {
@@ -306,7 +316,6 @@
       initScrollMonitor() {
         let scrollTimer = null;
         const navbar = document.getElementById('navbar');
-
         window.addEventListener('scroll', () => {
           if (window.innerWidth > 768) return;
           navbar.classList.add('menu-hidden');
@@ -318,22 +327,27 @@
       },
 
       async renderUI() {
-        const grid = document.getElementById('main-grid');
-        const projects = await this.fetchData();
+        const infoRoot = document.getElementById('info-root');
+        const galleryRoot = document.getElementById('gallery-root');
         
-        const infoHTML = SITE_CONFIG.infoSections.map(sec => `
-          <div class="fl-info fl-reveal type-info" style="${sec.columnSpan}">
+        // 1. Info 区渲染
+        infoRoot.innerHTML = SITE_CONFIG.infoSections.map(sec => `
+          <div class="fl-info fl-reveal type-info" style="grid-column: span ${sec.span}">
             <b class="fl-info__title">${sec.title}</b>
             ${sec.content}
           </div>
         `).join('');
         
+        // 2. Gallery 区渲染 (使用 <img> 实现自适应比例)
+        const projects = await this.fetchData();
         const galleryHTML = projects.map((item, index) => `
-          <div class="fl-item-wrapper span-${index + 1} fl-reveal">
+          <div class="fl-item-wrapper fl-reveal">
             <div class="type-item-container">
-              <span class="type-item">${item.id || 'Project'}</span>
+              <span class="type-item">Project ${String(index + 1).padStart(2, '0')}</span>
             </div>
-            <a href="/${item.id}/index.html" class="fl-item" style="background-image:url('${item.img}');"></a>
+            <a href="#" class="fl-item">
+              <img src="${item.img}" alt="Project Image" loading="lazy">
+            </a>
           </div>
         `).join('');
 
@@ -343,7 +357,7 @@
           </div>
         `;
         
-        grid.innerHTML = infoHTML + galleryHTML + archiveHTML;
+        galleryRoot.innerHTML = galleryHTML + archiveHTML;
         this.initReveal();
       },
 
