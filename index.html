@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.8 (Seamless Safari Integration)
+  版本: v3.9 (Safari Seamless Patch)
   
-  核心变更:
-  - 基于 v3.6 架构，精准修复 Safari 无痕模式底部断层。
-  - HTML 层级背景强制锁定，防止系统 UI 切换时露底。
-  - 移除 overscroll-behavior 恢复原生滚动链，使内容穿透标签栏。
-  - 动态 Theme-Color 同步系统状态栏/底座颜色。
+  核心变更说明:
+  - 撤销 v3.8 的不必要改动，恢复 v3.5 的稳定性。
+  - 核心补丁：将背景色上移至 HTML 层级，并将 Body 设为透明。
+  - 恢复 overscroll-behavior-y: none 锁定，防止 Chrome 果冻效应。
+  - 优化移动端底部 Padding，确保内容完全穿透 Safari 标签栏底座。
 -->
-<title>Folio | v3.8</title>
+<title>Folio | v3.9</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
 <style>
@@ -42,11 +42,11 @@
     }
   }
 
-  /* --- [核心修正] 深度锁定背景，消除 Safari 断层 --- */
+  /* --- [核心修正 A]：层级穿透 (解决红圈白色底座的关键) --- */
   html {
+    /* 强制让 html 承载背景色，确保它能填满 Safari UI 缩放时的盲区 */
     background-color: var(--fl-bg) !important;
-    height: auto;
-    min-height: 100%;
+    height: 100%; 
     transition: background 0.5s var(--fl-ease);
   }
 
@@ -76,13 +76,17 @@
      3. LAYOUT & COMPONENTS
      ========================================================================== */
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
   body { 
     margin: 0; 
     padding: 0; 
-    background-color: var(--fl-bg); 
+    /* [核心修正] 将 body 背景设为透明，让 html 的颜色透出来，消除 Safari 无痕模式底座白块 */
+    background-color: transparent !important;
     overflow-x: hidden; 
     min-height: 100vh;
-    /* [修正] 移除 overscroll-behavior-y，恢复原生滚动以填补系统 UI 下方的盲区 */
+    min-height: 100dvh;
+    /* 恢复 v3.5 锁定，防止 Chrome 果冻效应 */
+    overscroll-behavior-y: none; 
   }
 
   .fl-grid {
@@ -110,11 +114,12 @@
 
   @media (max-width: 768px) {
     .fl-grid { 
-      /* [核心修正] 增加底部内边距，确保内容能够穿透 Safari 的动态标签栏 */
-      padding: 20px 0 calc(140px + env(safe-area-inset-bottom)) !important; 
+      /* [核心修正 B] 增加底部内边距，确保内容完全穿透 Safari 的动态标签栏底座 */
+      padding: 80px 0 calc(140px + env(safe-area-inset-bottom)) !important; 
     }
     .fl-header {
       top: auto; 
+      /* 维持 v3.5 定位 */
       bottom: calc(12px + env(safe-area-inset-bottom)) !important; 
       left: 12px;
       width: calc(100% - 24px); 
@@ -126,11 +131,11 @@
       border: 0.5px solid rgba(0,0,0,0.08);
       mix-blend-mode: normal; 
       overflow: hidden; 
-      /* 强制硬件加速 */
+      /* 开启独立合成层，解决 Chrome 渲染闪烁 */
       transform: translateZ(0);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.4s linear;
+      transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity(0.4s) linear;
       will-change: transform, opacity;
     }
     
@@ -269,6 +274,7 @@
         root.style.setProperty('--fl-fs-item-m', ty.item.mobile);
       },
 
+      // [核心修正] 3.9 只保留动态同步 Theme-Color
       initThemeColor() {
         let meta = document.querySelector('meta[name="theme-color"]');
         if (!meta) {
@@ -277,21 +283,13 @@
           document.head.appendChild(meta);
         }
         const updateColor = () => {
+          // 自动抓取 :root 中的 --fl-bg，同步给手机系统的状态栏和底栏
           const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--fl-bg').trim();
           meta.content = bgColor;
         };
         updateColor();
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateColor);
         setTimeout(updateColor, 500);
-      },
-
-      initViewportFix() {
-        const fix = () => {
-          // 只同步高度数值，不锁定容器高度
-          document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
-        };
-        window.addEventListener('resize', fix);
-        fix();
       },
 
       initLogo() {
@@ -360,8 +358,7 @@
 
       start() { 
         this.initStyles(); 
-        this.initThemeColor();
-        this.initViewportFix();
+        this.initThemeColor(); // 启动主题同步
         this.initLogo(); 
         this.initScrollMonitor(); 
         document.getElementById('ls').innerHTML = SITE_CONFIG.navigation.map(n => `<a href="${n.link}" class="fl-nav__link type-nav">${n.name}</a>`).join('');
