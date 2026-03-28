@@ -5,14 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.9 (Safari Seamless Patch - Refined)
+  版本: v3.9.1 (Safari Seamless Patch - Scrollbar Hidden)
   
   核心变更说明:
-  - 修正移动端 .fl-header 的定位与高度锁定，消除顶部多余空间。
-  - 修复 transition 语法错误，恢复动画。
-  - 优化移动端内容顶部 padding，使布局更紧凑。
+  - 继承 v3.9 的 HTML 背景染色法和移动端布局修正。
+  - [全域隐藏滚动条]：隐藏桌面端和移动端的视觉滚动条，保持布局紧凑。
 -->
-<title>Folio | v3.9</title>
+<title>Folio | v3.9.1</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
 <style>
@@ -41,11 +40,24 @@
     }
   }
 
-  /* --- [核心修正]：层级穿透 (解决红圈白色底座的关键) --- */
+  /* --- [核心修正]：层级穿透 --- */
   html {
     background-color: var(--fl-bg) !important;
     height: 100%; 
     transition: background 0.5s var(--fl-ease);
+    
+    /* [新增] 隐藏全域滚动条 - Firefox */
+    scrollbar-width: none; 
+    /* [新增] 隐藏全域滚动条 - IE/Edge */
+    -ms-overflow-style: none; 
+  }
+
+  /* [新增] 隐藏全域滚动条 - Chrome/Safari/Edge */
+  html::-webkit-scrollbar, 
+  body::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+    height: 0 !important;
   }
 
   /* ==========================================================================
@@ -110,15 +122,14 @@
 
   @media (max-width: 768px) {
     .fl-grid { 
-      /* [修正] 缩小顶部 padding 消除多余高度，增加底部 padding 确保内容穿透 Safari 底座 */
       padding: 20px 4px calc(140px + env(safe-area-inset-bottom)) !important; 
     }
     .fl-header {
-      top: auto !important; /* 彻底切断顶部定位 */
+      top: auto !important; 
       bottom: calc(12px + env(safe-area-inset-bottom)) !important; 
       left: 12px;
       width: calc(100% - 24px); 
-      height: var(--fl-nav-h-m) !important; /* 强制锁定移动端高度为 44px */
+      height: var(--fl-nav-h-m) !important; 
       padding: 0 16px !important; 
       border-radius: 10px;
       background: var(--fl-nav-bg-m); 
@@ -129,7 +140,6 @@
       transform: translateZ(0);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      /* [修正] 修复 transition 语法错误 */
       transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.4s linear;
       will-change: transform, opacity;
     }
