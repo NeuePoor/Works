@@ -5,13 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.9 (Safari Seamless Patch)
+  版本: v3.9 (Safari Seamless Patch - Refined)
   
   核心变更说明:
-  - 撤销 v3.8 的不必要改动，恢复 v3.5 的稳定性。
-  - 核心补丁：将背景色上移至 HTML 层级，并将 Body 设为透明。
-  - 恢复 overscroll-behavior-y: none 锁定，防止 Chrome 果冻效应。
-  - 优化移动端底部 Padding，确保内容完全穿透 Safari 标签栏底座。
+  - 修正移动端 .fl-header 的定位与高度锁定，消除顶部多余空间。
+  - 修复 transition 语法错误，恢复动画。
+  - 优化移动端内容顶部 padding，使布局更紧凑。
 -->
 <title>Folio | v3.9</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
@@ -42,9 +41,8 @@
     }
   }
 
-  /* --- [核心修正 A]：层级穿透 (解决红圈白色底座的关键) --- */
+  /* --- [核心修正]：层级穿透 (解决红圈白色底座的关键) --- */
   html {
-    /* 强制让 html 承载背景色，确保它能填满 Safari UI 缩放时的盲区 */
     background-color: var(--fl-bg) !important;
     height: 100%; 
     transition: background 0.5s var(--fl-ease);
@@ -80,12 +78,10 @@
   body { 
     margin: 0; 
     padding: 0; 
-    /* [核心修正] 将 body 背景设为透明，让 html 的颜色透出来，消除 Safari 无痕模式底座白块 */
     background-color: transparent !important;
     overflow-x: hidden; 
     min-height: 100vh;
     min-height: 100dvh;
-    /* 恢复 v3.5 锁定，防止 Chrome 果冻效应 */
     overscroll-behavior-y: none; 
   }
 
@@ -114,16 +110,15 @@
 
   @media (max-width: 768px) {
     .fl-grid { 
-      /* [核心修正 B] 增加底部内边距，确保内容完全穿透 Safari 的动态标签栏底座 */
-      padding: 80px 0 calc(140px + env(safe-area-inset-bottom)) !important; 
+      /* [修正] 缩小顶部 padding 消除多余高度，增加底部 padding 确保内容穿透 Safari 底座 */
+      padding: 20px 4px calc(140px + env(safe-area-inset-bottom)) !important; 
     }
     .fl-header {
-      top: auto; 
-      /* 维持 v3.5 定位 */
+      top: auto !important; /* 彻底切断顶部定位 */
       bottom: calc(12px + env(safe-area-inset-bottom)) !important; 
       left: 12px;
       width: calc(100% - 24px); 
-      height: var(--fl-nav-h-m) !important; 
+      height: var(--fl-nav-h-m) !important; /* 强制锁定移动端高度为 44px */
       padding: 0 16px !important; 
       border-radius: 10px;
       background: var(--fl-nav-bg-m); 
@@ -131,11 +126,11 @@
       border: 0.5px solid rgba(0,0,0,0.08);
       mix-blend-mode: normal; 
       overflow: hidden; 
-      /* 开启独立合成层，解决 Chrome 渲染闪烁 */
       transform: translateZ(0);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity(0.4s) linear;
+      /* [修正] 修复 transition 语法错误 */
+      transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.4s linear;
       will-change: transform, opacity;
     }
     
@@ -274,7 +269,6 @@
         root.style.setProperty('--fl-fs-item-m', ty.item.mobile);
       },
 
-      // [核心修正] 3.9 只保留动态同步 Theme-Color
       initThemeColor() {
         let meta = document.querySelector('meta[name="theme-color"]');
         if (!meta) {
@@ -283,7 +277,6 @@
           document.head.appendChild(meta);
         }
         const updateColor = () => {
-          // 自动抓取 :root 中的 --fl-bg，同步给手机系统的状态栏和底栏
           const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--fl-bg').trim();
           meta.content = bgColor;
         };
@@ -358,7 +351,7 @@
 
       start() { 
         this.initStyles(); 
-        this.initThemeColor(); // 启动主题同步
+        this.initThemeColor();
         this.initLogo(); 
         this.initScrollMonitor(); 
         document.getElementById('ls').innerHTML = SITE_CONFIG.navigation.map(n => `<a href="${n.link}" class="fl-nav__link type-nav">${n.name}</a>`).join('');
