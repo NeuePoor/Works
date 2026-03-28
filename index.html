@@ -5,15 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.6 (Safari Full-Screen Lock & Theme Sync)
+  版本: v3.7 (Safari Deep-Layer Seamless Fix)
   
   核心变更:
-  - 修复 Safari 断层：HTML 根节点背景锁定与物理视口强制填充。
-  - 动态 Theme-Color：自动同步系统 UI 颜色（状态栏/底座）。
-  - 安全区补偿：精细化移动端底部间距，防止 UI 撕裂。
-  - 维持 v3.5 的 250ms 显隐逻辑与高度锁定。
+  - 彻底消除底座断层：移除 html/body 的强制高度锁定，让内容自然穿透 Safari 底部 UI。
+  - 恢复原生滚动感知：移除 overscroll-behavior，允许 Safari 进行弹性渲染，消除色块死区。
+  - 动态 Theme-Color：保持系统 UI 显色同步。
+  - 交互优化：维持 250ms 导航显隐逻辑。
 -->
-<title>Folio | v3.6</title>
+<title>Folio | v3.7</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
 <style>
@@ -42,10 +42,10 @@
     }
   }
 
-  /* --- 全局底层锁定 (解决 Safari 露底问题) --- */
+  /* --- 修复方案：取消高度锁定，让背景穿透系统 UI --- */
   html {
     background: var(--fl-bg); 
-    height: -webkit-fill-available; /* 强制 iOS 撑满物理视口 */
+    /* 不再设置高度锁定，允许内容自然溢出至地址栏下方 */
     transition: background 0.5s var(--fl-ease); 
   }
 
@@ -80,9 +80,7 @@
     padding: 0; 
     background: var(--fl-bg); 
     overflow-x: hidden; 
-    min-height: 100vh; 
-    min-height: 100dvh; 
-    overscroll-behavior-y: none; /* 移动端下拉锁定 */
+    /* 移除 overscroll-behavior-y，恢复原生 Safari 滚动特性，消除 UI 断层 */
   }
 
   .fl-grid {
@@ -90,6 +88,7 @@
     grid-template-columns: repeat(12, 1fr);
     gap: var(--fl-gutter); 
     margin: var(--fl-margin);
+    /* 顶部预留导航高度，底部通过内边距优雅穿透 */
     padding: 80px 0 120px;
   }
 
@@ -110,8 +109,8 @@
 
   @media (max-width: 768px) {
     .fl-grid { 
-      /* 动态安全区填补：当导航栏消失，内容自动填补不露底 */
-      padding: 20px 0 calc(80px + env(safe-area-inset-bottom)) !important; 
+      /* 核心适配：移除硬编码高度影响，利用安全区引导滚动到底部的视觉连续性 */
+      padding: 20px 0 calc(100px + env(safe-area-inset-bottom)) !important; 
     }
     .fl-header {
       top: auto; 
@@ -122,12 +121,12 @@
       padding: 0 16px !important; 
       border-radius: 10px;
       background: var(--fl-nav-bg-m); 
-      background-attachment: scroll; 
       backdrop-filter: blur(20px) saturate(180%); 
       border: 0.5px solid rgba(0,0,0,0.08);
       mix-blend-mode: normal; 
       overflow: hidden; 
-      /* 强制独立复合层，解决渲染闪烁 */
+      /* 硬件加速以避免 Safari 滚动时的抖动 */
+      transform: translate3d(0, 0, 0);
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
       transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.4s linear;
@@ -135,7 +134,7 @@
     }
     
     .fl-header.menu-hidden {
-      transform: translateY(calc(100% + 60px)); 
+      transform: translate3d(0, calc(100% + 60px), 0); 
       opacity: 0;
       pointer-events: none; 
     }
@@ -182,7 +181,6 @@
     .fl-item-wrapper { grid-column: span 12 !important; margin-bottom: 28px; }
     .fl-item { 
       height: 60vh; 
-      height: 60dvh; 
       order: 2; 
     }
     .type-item-container { order: 1; margin: 0 0 var(--fl-gutter) 0; display: block; mix-blend-mode: normal; }
@@ -270,7 +268,6 @@
         root.style.setProperty('--fl-fs-item-m', ty.item.mobile);
       },
 
-      // 动态同步系统 UI 颜色
       initThemeColor() {
         let meta = document.querySelector('meta[name="theme-color"]');
         if (!meta) {
@@ -278,16 +275,12 @@
           meta.name = "theme-color";
           document.head.appendChild(meta);
         }
-
         const updateColor = () => {
-          // 实时抓取 CSS 变量中的背景色
           const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--fl-bg').trim();
           meta.content = bgColor;
         };
-
         updateColor();
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateColor);
-        // 延迟补偿：确保样式表加载完成后再次校准
         setTimeout(updateColor, 500);
       },
 
@@ -305,13 +298,8 @@
 
         window.addEventListener('scroll', () => {
           if (window.innerWidth > 768) return;
-
-          // 只要在滚动，就立即隐藏导航栏
           navbar.classList.add('menu-hidden');
-
           clearTimeout(scrollTimer);
-
-          // 250ms 延迟，确保在停止滚动后才重新显现
           scrollTimer = setTimeout(() => {
             navbar.classList.remove('menu-hidden');
           }, 250);
@@ -362,7 +350,7 @@
 
       start() { 
         this.initStyles(); 
-        this.initThemeColor(); // 启动颜色同步
+        this.initThemeColor(); 
         this.initLogo(); 
         this.initScrollMonitor(); 
         document.getElementById('ls').innerHTML = SITE_CONFIG.navigation.map(n => `<a href="${n.link}" class="fl-nav__link type-nav">${n.name}</a>`).join('');
