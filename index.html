@@ -5,13 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
 <!-- 
   项目名称: Folio Design System
-  版本: v3.5 (Refined Scroll Delay)
+  版本: v3.6 (Safari Full-Screen Lock & Theme Sync)
   
   核心变更:
-  - 调整滚动停止检测延迟为 250ms，提升交互优雅度。
-  - 延续 v3.4 的状态触发逻辑与物理尺寸锁定。
+  - 修复 Safari 断层：HTML 根节点背景锁定与物理视口强制填充。
+  - 动态 Theme-Color：自动同步系统 UI 颜色（状态栏/底座）。
+  - 安全区补偿：精细化移动端底部间距，防止 UI 撕裂。
+  - 维持 v3.5 的 250ms 显隐逻辑与高度锁定。
 -->
-<title>Folio | v3.5</title>
+<title>Folio | v3.6</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
 
 <style>
@@ -19,8 +21,8 @@
      1. DESIGN TOKENS
      ========================================================================== */
   :root {
-    --fl-bg: #fff;
-    --fl-text: #000;
+    --fl-bg: #ffffff;
+    --fl-text: #000000;
     --fl-nav-bg-m: rgba(255, 255, 255, 0.7);
     --fl-gutter: 4px; 
     --fl-margin: 4px;
@@ -34,10 +36,17 @@
 
   @media (prefers-color-scheme: dark) {
     :root { 
-      --fl-bg: #000; 
-      --fl-text: #fff; 
+      --fl-bg: #000000; 
+      --fl-text: #ffffff; 
       --fl-nav-bg-m: rgba(28, 28, 30, 0.8); 
     }
+  }
+
+  /* --- 全局底层锁定 (解决 Safari 露底问题) --- */
+  html {
+    background: var(--fl-bg); 
+    height: -webkit-fill-available; /* 强制 iOS 撑满物理视口 */
+    transition: background 0.5s var(--fl-ease); 
   }
 
   /* ==========================================================================
@@ -73,7 +82,7 @@
     overflow-x: hidden; 
     min-height: 100vh; 
     min-height: 100dvh; 
-    overscroll-behavior-y: none;
+    overscroll-behavior-y: none; /* 移动端下拉锁定 */
   }
 
   .fl-grid {
@@ -100,10 +109,13 @@
   .fl-nav__link:hover { opacity: 0.3; }
 
   @media (max-width: 768px) {
-    .fl-grid { padding-top: 20px; }
+    .fl-grid { 
+      /* 动态安全区填补：当导航栏消失，内容自动填补不露底 */
+      padding: 20px 0 calc(80px + env(safe-area-inset-bottom)) !important; 
+    }
     .fl-header {
       top: auto; 
-      bottom: calc(12px + env(safe-area-inset-bottom)); 
+      bottom: calc(12px + env(safe-area-inset-bottom)) !important; 
       left: 12px;
       width: calc(100% - 24px); 
       height: var(--fl-nav-h-m) !important; 
@@ -115,6 +127,9 @@
       border: 0.5px solid rgba(0,0,0,0.08);
       mix-blend-mode: normal; 
       overflow: hidden; 
+      /* 强制独立复合层，解决渲染闪烁 */
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
       transition: transform 0.5s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.4s linear;
       will-change: transform, opacity;
     }
@@ -255,6 +270,27 @@
         root.style.setProperty('--fl-fs-item-m', ty.item.mobile);
       },
 
+      // 动态同步系统 UI 颜色
+      initThemeColor() {
+        let meta = document.querySelector('meta[name="theme-color"]');
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.name = "theme-color";
+          document.head.appendChild(meta);
+        }
+
+        const updateColor = () => {
+          // 实时抓取 CSS 变量中的背景色
+          const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--fl-bg').trim();
+          meta.content = bgColor;
+        };
+
+        updateColor();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateColor);
+        // 延迟补偿：确保样式表加载完成后再次校准
+        setTimeout(updateColor, 500);
+      },
+
       initLogo() {
         const v = document.getElementById('v'), g = document.getElementById('g'), t = document.getElementById('t');
         g.src = SITE_CONFIG.assets.logoGif;
@@ -275,7 +311,7 @@
 
           clearTimeout(scrollTimer);
 
-          // 调整为 250ms，让交互感更从容
+          // 250ms 延迟，确保在停止滚动后才重新显现
           scrollTimer = setTimeout(() => {
             navbar.classList.remove('menu-hidden');
           }, 250);
@@ -326,6 +362,7 @@
 
       start() { 
         this.initStyles(); 
+        this.initThemeColor(); // 启动颜色同步
         this.initLogo(); 
         this.initScrollMonitor(); 
         document.getElementById('ls').innerHTML = SITE_CONFIG.navigation.map(n => `<a href="${n.link}" class="fl-nav__link type-nav">${n.name}</a>`).join('');
