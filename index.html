@@ -3,386 +3,373 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-<!-- 
-  项目名称: Folio Design System
-  版本: v4.2 (Structure Restored + Auto-Height Fix)
-  
-  核心变更说明:
-  - 核心结构回退至 v4.0：保留完整的 Info 独立区、完整的 SITE_CONFIG 资产与排版配置。
-  - 图片自适应修正：仅修改 Gallery 渲染逻辑，将背景图改为 <img> 标签以适应 url 图原始高度。
-  - 功能恢复：恢复 Logo 视频/GIF 切换逻辑及全域滚动条隐藏。
--->
-<title>Folio | v4.2</title>
-<link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/Favicon.webp">
+<title>Foo | Portfolio</title>
+<link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/favicon.webp">
 
 <style>
-  /* ==========================================================================
-     1. DESIGN TOKENS
-     ========================================================================== */
-  :root {
-    --fl-bg: #ffffff;
-    --fl-text: #000000;
-    --fl-nav-bg-m: rgba(255, 255, 255, 0.7);
-    --fl-gutter: 4px; 
-    --fl-margin: 4px;
-    --fl-nav-h: 60px;
-    --fl-nav-h-m: 44px; 
-    --fl-font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
-    --fl-reveal-dist: 20px;
-    --fl-reveal-dur: 0.8s;
-    --fl-ease: cubic-bezier(0.23, 1, 0.32, 1);
-  }
+/* ==========================================================================
+BASE CSS & DYNAMIC TOKENS | 基础样式与动态令牌
+========================================================================= */
+:root {
+--fl-bg: #ffffff;
+--fl-text: #000000;
+--fl-gutter: 4px;
+--fl-margin: 4px;
+--fl-nav-h: 60px;
+--fl-nav-h-m: 44px; 
+--fl-ease: cubic-bezier(0.23, 1, 0.32, 1);
+--fl-reveal-dist: 30px;
+--fl-reveal-dur: 1.2s;
+--fl-font-fallback: "Arial", "Helvetica", sans-serif;
 
-  @media (prefers-color-scheme: dark) {
-    :root { 
-      --fl-bg: #000000; 
-      --fl-text: #ffffff; 
-      --fl-nav-bg-m: rgba(28, 28, 30, 0.8); 
-    }
-  }
+/* 默认光标 SVG (32px 全长十字) - 浅色模式(黑线) */
+--cur-default: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='0' x2='16' y2='32' stroke='black' stroke-width='1'/%3E%3Cline x1='0' y1='16' x2='32' y2='16' stroke='black' stroke-width='1'/%3E%3C/svg%3E") 16 16, crosshair;
+/* 交互光标 SVG (缩短 30%) - 浅色模式(黑线) */
+--cur-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='5' x2='16' y2='27' stroke='black' stroke-width='1'/%3E%3Cline x1='5' y1='16' x2='27' y2='16' stroke='black' stroke-width='1'/%3E%3C/svg%3E") 16 16, crosshair;
+}
 
-  /* --- 全域隐藏滚动条 --- */
-  html {
-    background-color: var(--fl-bg) !important;
-    height: 100%; 
-    transition: background 0.5s var(--fl-ease);
-    scrollbar-width: none; 
-    -ms-overflow-style: none; 
-  }
-  html::-webkit-scrollbar, body::-webkit-scrollbar {
-    display: none; width: 0 !important; height: 0 !important;
-  }
+@media (prefers-color-scheme: dark) {
+:root {
+--fl-bg: #000000;
+--fl-text: #ffffff;
+--cur-default: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='0' x2='16' y2='32' stroke='white' stroke-width='1'/%3E%3Cline x1='0' y1='16' x2='32' y2='16' stroke='white' stroke-width='1'/%3E%3C/svg%3E") 16 16, crosshair;
+--cur-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='5' x2='16' y2='27' stroke='white' stroke-width='1'/%3E%3Cline x1='5' y1='16' x2='27' y2='16' stroke='white' stroke-width='1'/%3E%3C/svg%3E") 16 16, crosshair;
+}
+}
 
-  /* ==========================================================================
-     2. TYPOGRAPHY RULES
-     ========================================================================== */
-  html, body { 
-    font-family: var(--fl-font-main); 
-    color: var(--fl-text);
-    -webkit-font-smoothing: antialiased;
-    line-height: 1.4;
-  }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+html, body { scrollbar-width: none; -ms-overflow-style: none; user-select: none; height: 100%; margin: 0; padding: 0; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 
-  .type-nav { font-size: var(--fl-fs-nav); font-weight: 700; letter-spacing: -0.05em; text-decoration: none; color: #fff; }
-  .type-archive { font-size: 10px; font-weight: 600; text-decoration: none; color: var(--fl-text); transition: opacity 0.3s; }
-  .type-archive:hover { opacity: 0.5; }
+body {
+font-family: var(--fl-font-fallback);
+background: var(--fl-bg);
+color: var(--fl-text);
+overflow-x: hidden;
+line-height: 1.4;
+transition: background-color 0.25s ease-out;
+}
 
-  /* Info 区排版配置 */
-  .type-info { 
-    font-size: var(--fl-info-fs); 
-    line-height: var(--fl-info-lh); 
-    opacity: var(--fl-info-op); 
+/* ==========================================================================
+   NATIVE CSS CURSOR SYSTEM | 原生 CSS 光标切换方案
+   ========================================================================== */
+@media (min-width: 769px) {
+  *, html, body { cursor: var(--cur-default) !important; }
+  a, button, .fl-nav__link, .back-icon-trigger, .fl-logo__gif, .fl-item-wrapper, #trigger-wechat, [role="button"] {
+    cursor: var(--cur-hover) !important;
   }
-  .fl-info__title { 
-    display: block; 
-    margin-bottom: var(--fl-info-gap); 
-    font-weight: normal; 
-  }
+  a * , button *, .fl-item-wrapper * { cursor: inherit !important; }
+}
 
-  /* Gallery 区排版配置 */
-  .type-item { 
-    font-size: var(--fl-fs-item); 
-    font-weight: 600; 
-  }
+/* ==========================================================================
+    FOCUS MODE | 核心交互逻辑
+   ========================================================================== */
+.fl-nav__link, .fl-info-row, .fl-info__title, .fl-item-wrapper, .fl-logo__gif, .fl-cdn-container, .back-icon-trigger {
+  transition: filter 0.5s var(--fl-ease), opacity 0.5s var(--fl-ease);
+}
 
-  @media (max-width: 768px) {
-    .type-nav { font-size: var(--fl-fs-nav-m); }
-    .type-info { font-size: var(--fl-info-fs-m); }
-    .fl-info__title { margin-bottom: var(--fl-info-gap-m); }
-    .type-item { font-size: var(--fl-fs-item-m); }
-  }
+body.is-focus-mode .fl-nav__link,
+body.is-focus-mode .back-icon-trigger,
+body.is-focus-mode .fl-info-row,
+body.is-focus-mode .fl-info__title,
+body.is-focus-mode .fl-cdn-container {
+  filter: blur(8px) !important;
+  opacity: 0.4 !important;
+}
 
-  /* ==========================================================================
-     3. LAYOUT & COMPONENTS
-     ========================================================================= */
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body.is-focus-mode .fl-nav__link:hover,
+body.is-focus-mode .back-icon-trigger:hover,
+body.is-focus-mode .fl-info-row:hover,
+body.is-focus-mode .fl-info__title:hover,
+body.is-focus-mode .fl-item-wrapper:hover .fl-cdn-container {
+  filter: blur(0) !important;
+  opacity: 1 !important;
+}
+
+/* ==========================================================================
+    LAYOUT & GRID
+   ========================================================================== */
+.fl-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--fl-gutter); margin: var(--fl-margin); padding: 80px 0 120px; }
+.fl-reveal { opacity: 0; transform: translateY(var(--fl-reveal-dist)); transition: opacity var(--fl-reveal-dur) var(--fl-ease), transform var(--fl-reveal-dur) var(--fl-ease); }
+.fl-reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+/* ==========================================================================
+    COMPONENT: HEADER & TRACKS
+   ========================================================================== */
+.fl-logo__gif-wrap { position: fixed; top: 0; left: 4px; height: var(--fl-nav-h); display: flex; align-items: center; z-index: 1001; transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease); }
+.fl-logo__gif { height: var(--logo-size-pc); opacity: 0; transition: opacity 0.3s var(--fl-ease); }
+
+.fl-header { position: fixed; width: 100%; z-index: 999; display: flex; justify-content: space-between; align-items: center; padding: 0 4px; height: var(--fl-nav-h); top: 0; mix-blend-mode: difference; transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease); }
+.fl-logo-text { text-decoration: none; color: #fff; font-family: var(--header-font); font-size: var(--header-fs); font-weight: var(--header-fw); transition: opacity 0.3s var(--fl-ease); opacity: 0; display: flex; align-items: center; }
+
+.fl-nav { display: flex; gap: 40px; align-items: center; }
+.fl-nav__link { font-family: var(--header-font); font-size: var(--header-fs); font-weight: var(--header-fw); color: #fff; text-decoration: none; }
+
+.secondary-track { 
+  position: fixed !important; top: 0; left: 0; width: 100% !important; 
+  transform: translateX(100%); 
+  opacity: 0; pointer-events: none !important;
+  transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease), filter 0.6s var(--fl-ease) !important; 
+  z-index: 1100;
+}
+
+body.is-secondary-active .fl-header:not(.secondary-track),
+body.is-secondary-active .fl-logo__gif-wrap { transform: translateX(-100%) !important; opacity: 0; pointer-events: none !important; }
+body.is-secondary-active .secondary-track { transform: translateX(0) !important; opacity: 1 !important; pointer-events: auto !important; }
+
+.back-icon-trigger { display: flex; align-items: center; justify-content: center; position: relative; height: var(--header-fs); }
+@media (min-width: 769px) { .secondary-track .back-icon-trigger { color: #fff !important; } }
+/* 修改 v5.2.6：content 从 CSS 变量读取，由 CONFIG 配置 */
+.back-icon-trigger::before { 
+  content: var(--back-text-content, "Works"); 
+  display: block; 
+  font-family: var(--header-font); 
+  font-size: var(--header-fs); 
+  font-weight: var(--header-fw);
+  color: currentColor; 
+  animation: fl-dot-blink 2s infinite ease-in-out; 
+}
+@keyframes fl-dot-blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1.0; } }
+
+/* ==========================================================================
+    MOBILE PATCH | 移动端补丁区
+   ========================================================================== */
+@media (max-width: 768px) {
+  body.is-focus-mode .fl-nav__link, body.is-focus-mode .back-icon-trigger, body.is-focus-mode .fl-info-row, body.is-focus-mode .fl-info__title, body.is-focus-mode .fl-cdn-container {
+    filter: none !important; opacity: 1 !important;
+  }
   
-  body { 
-    margin: 0; padding: 0; 
-    background-color: transparent !important;
-    overflow-x: hidden; 
-    min-height: 100vh;
-    min-height: 100dvh;
-    overscroll-behavior-y: none; 
+  .fl-header.is-nav-hidden, 
+  .fl-logo__gif-wrap.is-nav-hidden { 
+    transform: translateY(100px) !important; 
+    opacity: 0 !important; 
+    pointer-events: none !important; 
   }
 
-  .fl-main-container {
-    padding: 80px 0 120px;
-    margin: var(--fl-margin);
+  #ui-secondary-header.is-nav-hidden {
+    transform: translateX(0) translateY(100px) !important;
+    opacity: 0 !important;
   }
 
-  /* Info 区结构 (从 Gallery 独立) */
-  .fl-info-section {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: var(--fl-gutter);
-    margin-bottom: 60px;
+  body.is-secondary-active .secondary-track:not(.is-nav-hidden) {
+    transform: translateX(0) translateY(0) !important;
+    opacity: 1 !important;
   }
 
-  /* Gallery 区结构 */
-  .fl-gallery-section {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: var(--fl-gutter);
-  }
-
-  /* Header 逻辑 */
+  .fl-grid { padding: 4px 0 120px; }
+  .fl-logo__gif-wrap { top: auto !important; bottom: 24px !important; left: 48px !important; height: var(--fl-nav-h-m) !important; z-index: 1005; mix-blend-mode: normal !important; }
+  .fl-logo__gif { height: var(--logo-size-m) !important; }
   .fl-header {
-    position: fixed; width: 100%; z-index: 999;
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0 4px; height: var(--fl-nav-h); top: 0;
-    mix-blend-mode: difference;
-    transition: transform 0.5s var(--fl-ease), opacity 0.5s var(--fl-ease);
+    top: auto !important; bottom: 24px !important; left: 32px !important; 
+    width: calc(100% - 64px) !important; height: var(--fl-nav-h-m) !important; 
+    padding: 0 16px !important; border-radius: 12px !important; mix-blend-mode: normal !important;
+    background: rgba(255, 255, 255, 0.2) !important; backdrop-filter: blur(16px) saturate(160%) !important;
+    border: 0.5px solid rgba(0, 0, 0, 0.1) !important; z-index: 1000;
   }
+  @media (prefers-color-scheme: dark) {
+    .fl-header { background: rgba(28, 28, 30, 0.45) !important; border: 0.5px solid rgba(255, 255, 255, 0.1) !important; }
+    .fl-nav__link, .secondary-track .back-icon-trigger { color: var(--fl-text) !important; }
+  }
+  .secondary-track { left: 32px !important; bottom: 24px !important; top: auto !important; height: var(--fl-nav-h-m) !important; width: calc(100% - 64px) !important; }
+  .fl-nav { gap: 20px !important; }
+  .fl-nav__link { font-size: var(--header-fs-m) !important; color: var(--fl-text) !important; }
+  .back-icon-trigger::before { font-size: var(--header-fs-m) !important; }
+}
 
-  .fl-logo { height: 100%; display: flex; align-items: center; text-decoration: none; color: inherit; }
-  .fl-logo__video, .fl-logo__gif { height: 48px; width: auto; display: none; }
-  .fl-nav { display: flex; gap: 40px; }
-  .fl-nav__link { transition: opacity 0.3s; }
-  .fl-nav__link:hover { opacity: 0.3; }
+/* ==========================================================================
+    CONTENT STYLES
+   ========================================================================== */
+.fl-info { margin-bottom: 20px; font-family: var(--info-font); font-size: var(--info-fs); color: var(--fl-text); opacity: 0.8; }
+.fl-info__title { display: block; margin-bottom: 4.2em; font-weight: normal; }
+.fl-info-row { display: block; }
+.fl-info a { color: inherit; text-decoration: none; }
+.fl-item-wrapper { position: relative; }
+.fl-cdn-container { width: 100%; overflow: hidden; background-color: var(--fl-bg); min-height: 200px; }
+.fl-cdn-media { width: 100%; height: auto; display: block; opacity: 0; filter: blur(20px); transition: all 1.2s var(--fl-ease); }
+.is-loaded .fl-cdn-media { opacity: 1; filter: blur(0); }
 
-  @media (max-width: 768px) {
-    .fl-main-container { 
-      padding: 20px 4px calc(140px + env(safe-area-inset-bottom)) !important; 
-    }
-    .fl-header {
-      top: auto !important; 
-      bottom: calc(12px + env(safe-area-inset-bottom)) !important; 
-      left: 12px;
-      width: calc(100% - 24px); 
-      height: var(--fl-nav-h-m) !important; 
-      padding: 0 16px !important; 
-      border-radius: 10px;
-      background: var(--fl-nav-bg-m); 
-      backdrop-filter: blur(20px) saturate(180%); 
-      border: 0.5px solid rgba(0,0,0,0.08);
-      mix-blend-mode: normal; 
-      overflow: hidden; 
-      transform: translateZ(0);
-      transition: transform 0.5s var(--fl-ease), opacity 0.4s linear;
-    }
-    .fl-header.menu-hidden { transform: translateY(calc(100% + 80px)); opacity: 0; pointer-events: none; }
-    .fl-header .type-nav { color: var(--fl-text); } 
-    .fl-logo__video, .fl-logo__gif { height: 18px; }
-  }
-
-  /* 作品项：强制 12 栏全宽 + 自适应高度 */
-  .fl-item-wrapper { 
-    grid-column: span 12; 
-    position: relative; 
-    display: flex; 
-    flex-direction: column; 
-    margin-bottom: var(--fl-gutter); 
-  }
-  .fl-item {
-    width: 100%; 
-    height: auto; 
-    border-radius: 4px; 
-    overflow: hidden; 
-    display: block; 
-    background-color: #f5f5f5;
-  }
-  /* 关键：使用 img 撑开容器 */
-  .fl-item img {
-    width: 100%;
-    height: auto;
-    display: block;
-    transition: transform 0.6s var(--fl-ease);
-  }
-
-  .fl-archive-wrapper { grid-column: span 12; margin-top: 40px; display: flex; align-items: center; }
-
-  @media (min-width: 769px) {
-    .type-item-container {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      mix-blend-mode: difference; z-index: 2; pointer-events: none;
-    }
-    .type-item { color: #fff; opacity: 0; transform: translateY(5px); transition: all 0.6s var(--fl-ease); }
-    .fl-item-wrapper:hover .type-item { opacity: 1; transform: translateY(0); }
-    .fl-item-wrapper:hover img { transform: scale(1.005); }
-  }
-
-  @media (max-width: 768px) {
-    .fl-item { order: 2; }
-    .type-item-container { order: 1; margin: 0 0 var(--fl-gutter) 0; display: block; mix-blend-mode: normal; }
-    .type-item { color: var(--fl-text); opacity: 0; transform: translateY(10px); display: block; transition: all 0.6s var(--fl-ease); }
-    .fl-item-wrapper.is-visible .type-item { opacity: 1; transform: translateY(0); }
-  }
-
-  /* 动画 */
-  .fl-reveal {
-    opacity: 0; transform: translateY(var(--fl-reveal-dist));
-    transition: opacity var(--fl-reveal-dur) var(--fl-ease), transform var(--fl-reveal-dur) var(--fl-ease);
-  }
-  .fl-reveal.is-visible { opacity: 1; transform: translateY(0); }
+.fl-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: 0.4s; backdrop-filter: blur(10px); }
+.fl-overlay.is-active { opacity: 1; pointer-events: auto; }
+.fl-overlay img { width: 200px; height: auto; display: block; }
 </style>
 </head>
 <body>
 
-  <header class="fl-header" id="navbar">
-    <a href="/" class="fl-logo" id="logo">
-      <video class="fl-logo__video" id="v" autoplay loop muted playsinline preload="auto"></video>
-      <img class="fl-logo__gif" id="g" alt="Logo">
-      <span class="fl-logo__text type-nav" id="t">Fo</span>
-    </a>
-    <nav class="fl-nav" id="ls"></nav>
-  </header>
+<div class="fl-logo__gif-wrap" id="ui-logo-gif-wrap">
+<img class="fl-logo__gif" id="ui-logo-gif" alt="Logo">
+</div>
 
-  <main class="fl-main-container">
-    <!-- Info 区 -->
-    <div class="fl-info-section" id="info-root"></div>
-    <!-- Gallery 区 -->
-    <div class="fl-gallery-section" id="gallery-root"></div>
-  </main>
+<header class="fl-header" id="ui-header">
+<a href="#" class="fl-logo-text" id="ui-logo-text">Foo</a>
+<nav class="fl-nav" id="ui-nav"></nav>
+</header>
 
-  <script>
-    const SITE_CONFIG = {
-      assets: {
-        logoVideoWebm: "https://folio.neuepoor.com/head_chrome.webm",
-        logoVideoMp4: "https://folio.neuepoor.com/head_safari.mov",
-        logoGif: "https://folio.neuepoor.com/head_chrome.gif",
-        testImg: "https://folio.neuepoor.com/works/Quick%20Look%20Example-1.png"
-      },
-      typography: {
-        nav: { pc: "32px", mobile: "21px" },
-        item: { pc: "10px", mobile: "10px" }
-      },
-      // Info 区样式配置 (继承自 v4.0)
-      infoStyle: {
-        pc: { fontSize: "10px", opacity: "0.8", titleGap: "4.2em" },
-        mobile: { fontSize: "10px", opacity: "0.8", titleGap: "3.2em" },
-        lineHeight: "1.4"
-      },
-      navigation: [
-        { name: 'Works', link: 'https://works.neuepoor.com' },
-        { name: '(Play)', link: 'https://play.neuepoor.com' },
-        { name: 'Me', link: 'https://me.neuepoor.com' }
-      ],
-      infoSections: [
-        { title: "Works", content: "Branding<br>Vision identity<br>Look Book<br>Interface<br>Packaging<br>Editorial<br>Apparel", span: "6" },
-        { title: "Service", content: "Creative Direction<br>Art Direction<br>Graphic<br>Illustration<br>Motion<br>Typeface", span: "4" },
-        { title: "Contacts", content: "Email<br>Instagram<br>Github<br>小红书<br>Wechat", span: "2" }
-      ]
-    };
+<header class="fl-header secondary-track" id="ui-secondary-header">
+  <div class="back-icon-trigger" id="ui-back-icon-trigger"></div>
+  <nav class="fl-nav" id="ui-secondary-nav"></nav>
+</header>
 
-    const DS_ENGINE = {
-      async fetchData() {
-        return Array(7).fill({ id: "02001", img: SITE_CONFIG.assets.testImg });
-      },
+<main class="fl-grid" id="ui-main-grid"></main>
 
-      initStyles() {
-        const root = document.documentElement;
-        const ty = SITE_CONFIG.typography;
-        const inf = SITE_CONFIG.infoStyle;
-        
-        root.style.setProperty('--fl-fs-nav', ty.nav.pc);
-        root.style.setProperty('--fl-fs-nav-m', ty.nav.mobile);
-        root.style.setProperty('--fl-fs-item', ty.item.pc);
-        root.style.setProperty('--fl-fs-item-m', ty.item.mobile);
-        
-        root.style.setProperty('--fl-info-fs', inf.pc.fontSize);
-        root.style.setProperty('--fl-info-fs-m', inf.mobile.fontSize);
-        root.style.setProperty('--fl-info-op', inf.pc.opacity);
-        root.style.setProperty('--fl-info-gap', inf.pc.titleGap);
-        root.style.setProperty('--fl-info-gap-m', inf.mobile.titleGap);
-        root.style.setProperty('--fl-info-lh', inf.lineHeight);
-      },
+<div class="fl-overlay" id="ui-wechat-overlay">
+<img src="https://folio.neuepoor.com/wechatsuckboyz.svg" alt="WeChat">
+</div>
 
-      initThemeColor() {
-        let meta = document.querySelector('meta[name="theme-color"]');
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.name = "theme-color";
-          document.head.appendChild(meta);
-        }
-        const updateColor = () => {
-          const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--fl-bg').trim();
-          meta.content = bgColor;
-        };
-        updateColor();
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateColor);
-        setTimeout(updateColor, 500);
-      },
+<script>
+/**
+* CONFIG v5.2.6 - FOCUS MODE REPAIR
+*/
+const CONFIG = {
+version: "5.2.6",
+seo: { title: "Foo | Portfolio", favicon: "https://folio.neuepoor.com/favicon.webp" },
+typography: {
+  header: { font: "Arial, sans-serif", weight: "700", sizePC: "32px", sizeMobile: "21px" },
+  info: { font: "Arial, sans-serif", weight: "400", sizePC: "10px" },
+  gallery: { font: "Arial, sans-serif", weight: "400", sizePC: "10px" }
+},
+header: {
+  logo: { gif: "https://folio.neuepoor.com/logo.gif", link: "https://neuepoor.com", text: "Foo", sizePC: "32px", sizeMobile: "18px" },
+  secondary: { name: 'Archive', link: 'https://folio.neuepoor.com/archive' },
+  backText: "Works",
+  nav: [ 
+    { name: 'Works', link: 'https://works.neuepoor.com', triggerTrack: true }, 
+    { name: '(Play)', link: 'https://play.neuepoor.com', triggerTrack: false }, 
+    { name: 'Me', link: 'https://me.neuepoor.com', triggerTrack: false } 
+  ]
+},
+info: {
+  _lock: true,
+  data: [
+    { title: "Works", content: "Branding<br>Vision identity<br>Look Book<br>Interface<br>Packaging<br>Editorial<br>Apparel", span: 6 },
+    { title: "Service", content: "Creative Direction<br>Art Direction<br>Graphic<br>Illustration<br>Motion<br>Typeface", span: 4 },
+    { title: "Contacts", content: `<a href="mailto:poorleaglguy@qq.com">Email</a><br><a href="https://www.instagram.com/neuepoor" target="_blank">Instagram</a><br><a href="https://github.com/NeuePoor" target="_blank">Github</a><br><a href="https://xhslink.com/m/9qPnrun1Dh9" target="_blank">小红书</a><br><span id="trigger-wechat" style="cursor:pointer">Wechat</span>`, span: 2 }
+  ]
+},
+gallery: {
+  _editable: true,
+  items: [
+    { id: "02001", span: 12, src: "https://folio.neuepoor.com/works/Quick%20Look%20Example-1.png" },
+    { id: "02002", span: 12, src: "https://folio.neuepoor.com/works/Quick%20Look%20Example-3.png" },
+    { id: "02003", span: 12, src: "https://folio.neuepoor.com/works/Quick%20Look%20Example-4.png" },
+    { id: "02004", span: 12, src: "https://folio.neuepoor.com/works/Quick%20Look%20Example-6.png" },
+    { id: "02005", span: 12, src: "https://folio.neuepoor.com/works/Quick%20Look%20Example-7.png" }
+  ]
+}
+};
 
-      initLogo() {
-        const v = document.getElementById('v'), g = document.getElementById('g'), t = document.getElementById('t');
-        g.src = SITE_CONFIG.assets.logoGif;
-        v.innerHTML = `<source src="${SITE_CONFIG.assets.logoVideoWebm}" type="video/webm"><source src="${SITE_CONFIG.assets.logoVideoMp4}" type='video/mp4; codecs="hvc1"'>`;
-        v.play().catch(() => { v.style.display = 'none'; g.style.display = 'block'; });
-        v.oncanplay = () => { v.style.display = 'block'; g.style.display = 'none'; t.style.display = 'none'; };
-      },
+const ENGINE = {
+applyTypography() {
+  const root = document.documentElement;
+  const t = CONFIG.typography; const l = CONFIG.header.logo;
+  const props = {
+    '--header-font': t.header.font, '--header-fw': t.header.weight, '--header-fs': t.header.sizePC, '--header-fs-m': t.header.sizeMobile,
+    '--info-font': t.info.font, '--info-fs': t.info.sizePC, '--logo-size-pc': l.sizePC, '--logo-size-m': l.sizeMobile,
+    '--back-text-content': `"${CONFIG.header.backText}"`
+  };
+  Object.entries(props).forEach(([k, v]) => root.style.setProperty(k, v));
+},
 
-      initScrollMonitor() {
-        let scrollTimer = null;
-        const navbar = document.getElementById('navbar');
-        window.addEventListener('scroll', () => {
-          if (window.innerWidth > 768) return;
-          navbar.classList.add('menu-hidden');
-          clearTimeout(scrollTimer);
-          scrollTimer = setTimeout(() => {
-            navbar.classList.remove('menu-hidden');
-          }, 250);
-        }, { passive: true });
-      },
+renderHeader() {
+  const gif = document.getElementById('ui-logo-gif');
+  const text = document.getElementById('ui-logo-text');
+  const nav = document.getElementById('ui-nav');
+  const secondaryNav = document.getElementById('ui-secondary-nav');
+  text.innerText = CONFIG.header.logo.text;
+  gif.src = CONFIG.header.logo.gif;
+  gif.onload = () => { gif.style.opacity = "1"; };
+  nav.innerHTML = CONFIG.header.nav.map(n => `<a href="${n.link}" class="fl-nav__link" ${n.triggerTrack ? 'data-nav-trigger="true"' : ''}>${n.name}</a>`).join('');
+  secondaryNav.innerHTML = `<a href="${CONFIG.header.secondary.link}" class="fl-nav__link">${CONFIG.header.secondary.name}</a>`;
+},
 
-      async renderUI() {
-        const infoRoot = document.getElementById('info-root');
-        const galleryRoot = document.getElementById('gallery-root');
-        
-        // 1. Info 区渲染
-        infoRoot.innerHTML = SITE_CONFIG.infoSections.map(sec => `
-          <div class="fl-info fl-reveal type-info" style="grid-column: span ${sec.span}">
-            <b class="fl-info__title">${sec.title}</b>
-            ${sec.content}
-          </div>
-        `).join('');
-        
-        // 2. Gallery 区渲染 (使用 <img> 实现自适应比例)
-        const projects = await this.fetchData();
-        const galleryHTML = projects.map((item, index) => `
-          <div class="fl-item-wrapper fl-reveal">
-            <div class="type-item-container">
-              <span class="type-item">Project ${String(index + 1).padStart(2, '0')}</span>
-            </div>
-            <a href="#" class="fl-item">
-              <img src="${item.img}" alt="Project Image" loading="lazy">
-            </a>
-          </div>
-        `).join('');
+initSecondaryNav() {
+  const body = document.body;
+  const backIconBtn = document.getElementById('ui-back-icon-trigger');
+  setTimeout(() => { body.classList.add('is-secondary-active'); }, 100);
+  backIconBtn.onclick = () => { body.classList.remove('is-secondary-active'); };
+  document.addEventListener('click', (e) => {
+    const trigger = e.target.closest('[data-nav-trigger="true"]');
+    if (trigger) { e.preventDefault(); body.classList.add('is-secondary-active'); }
+  });
+},
 
-        const archiveHTML = `
-          <div class="fl-archive-wrapper fl-reveal">
-            <a href="/Archive/index.html" class="type-archive">Archive</a>
-          </div>
-        `;
-        
-        galleryRoot.innerHTML = galleryHTML + archiveHTML;
-        this.initReveal();
-      },
+initScrollInteraction() {
+  const elements = [
+    document.getElementById('ui-header'), 
+    document.getElementById('ui-logo-gif-wrap'), 
+    document.getElementById('ui-secondary-header')
+  ].filter(el => el !== null);
+  
+  let isScrolling;
+  window.addEventListener('scroll', () => {
+    if (window.innerWidth <= 768) {
+      elements.forEach(el => el.classList.add('is-nav-hidden'));
+      window.clearTimeout(isScrolling);
+      isScrolling = setTimeout(() => {
+        elements.forEach(el => el.classList.remove('is-nav-hidden'));
+      }, 250); 
+    }
+  }, { passive: true });
+},
 
-      initReveal() {
-        const observer = new IntersectionObserver((entries) => { 
-            entries.forEach(entry => { 
-                if (entry.isIntersecting) { 
-                    entry.target.classList.add('is-visible'); 
-                    observer.unobserve(entry.target); 
-                } 
-            }); 
-        }, { threshold: 0.1 });
-        document.querySelectorAll('.fl-reveal').forEach(el => observer.observe(el));
-      },
+buildContent() {
+  const grid = document.getElementById('ui-main-grid');
+  const infoHTML = CONFIG.info.data.map(sec => {
+    const rows = sec.content.split('<br>').map(row => `<span class="fl-info-row">${row}</span>`).join('');
+    return `<div class="fl-info fl-reveal" style="grid-column: span ${sec.span}"><b class="fl-info__title">${sec.title}</b>${rows}</div>`;
+  }).join('');
+  const galleryHTML = CONFIG.gallery.items.map(item => `<div class="fl-item-wrapper fl-reveal" style="grid-column: span ${item.span || 12}">${this.renderMedia(item.src)}</div>`).join('');
+  grid.innerHTML = infoHTML + galleryHTML;
+  this.initReveal();
+  this.initWeChat();
+  document.querySelectorAll('.fl-cdn-media').forEach(media => {
+    const markLoaded = () => media.closest('.fl-cdn-container').classList.add('is-loaded');
+    if (media.complete) markLoaded(); else media.addEventListener('load', markLoaded);
+  });
+},
 
-      start() { 
-        this.initStyles(); 
-        this.initThemeColor();
-        this.initLogo(); 
-        this.initScrollMonitor(); 
-        document.getElementById('ls').innerHTML = SITE_CONFIG.navigation.map(n => `<a href="${n.link}" class="fl-nav__link type-nav">${n.name}</a>`).join('');
-        this.renderUI(); 
-      }
-    };
-    DS_ENGINE.start();
-  </script>
+initWeChat() {
+  const trigger = document.getElementById('trigger-wechat');
+  const overlay = document.getElementById('ui-wechat-overlay');
+  if (trigger && overlay) { trigger.onclick = () => overlay.classList.add('is-active'); overlay.onclick = () => overlay.classList.remove('is-active'); }
+},
+
+renderMedia(src) { return `<div class="fl-cdn-container"><img class="fl-cdn-media" src="${src}" loading="lazy"></div>`; },
+
+initFocusMode() {
+  if (window.innerWidth <= 768) return;
+  const body = document.body;
+  // 选择器中包含 .back-icon-trigger 以支持二级轨道
+  const selectors = 'a, .fl-item-wrapper, .fl-logo__gif, .fl-info-row, .fl-nav__link, .fl-info__title, .back-icon-trigger';
+  
+  document.addEventListener('mouseover', (e) => { 
+    if (e.target.closest(selectors)) {
+      body.classList.add('is-focus-mode');
+    }
+  });
+  
+  document.addEventListener('mouseout', (e) => { 
+    if (!e.relatedTarget || !e.relatedTarget.closest(selectors)) {
+      body.classList.remove('is-focus-mode');
+    }
+  });
+},
+
+initReveal() {
+  const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); } }); }, { threshold: 0.1 });
+  document.querySelectorAll('.fl-reveal').forEach(el => observer.observe(el));
+},
+
+start() {
+  this.applyTypography(); 
+  this.renderHeader();
+  this.buildContent(); 
+  this.initSecondaryNav(); 
+  this.initScrollInteraction(); 
+  this.initFocusMode();
+}
+};
+
+window.onload = () => ENGINE.start();
+</script>
 </body>
 </html>
