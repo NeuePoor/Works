@@ -97,6 +97,7 @@ body.is-focus-mode .fl-item-wrapper:hover .fl-cdn-container {
     COMPONENT: HEADER & TRACKS
    ========================================================================== */
 .fl-logo__gif-wrap { position: fixed; top: 0; left: 4px; height: var(--fl-nav-h); display: flex; align-items: center; z-index: 1001; transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease); }
+.fl-logo-link { display: flex; align-items: center; height: 100%; text-decoration: none; }
 .fl-logo__gif { height: var(--logo-size-pc); opacity: 0; transition: opacity 0.3s var(--fl-ease); }
 
 .fl-header { position: fixed; width: 100%; z-index: 999; display: flex; justify-content: space-between; align-items: center; padding: 0 4px; height: var(--fl-nav-h); top: 0; mix-blend-mode: difference; transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease); }
@@ -113,8 +114,9 @@ body.is-focus-mode .fl-item-wrapper:hover .fl-cdn-container {
   z-index: 1100;
 }
 
-body.is-secondary-active .fl-header:not(.secondary-track),
-body.is-secondary-active .fl-logo__gif-wrap { transform: translateX(-100%) !important; opacity: 0; pointer-events: none !important; }
+/* 优化：当二级轨道激活时，Logo 区域仍需保留 pointer-events 以便跳转 */
+body.is-secondary-active .fl-header:not(.secondary-track) { transform: translateX(-100%) !important; opacity: 0; pointer-events: none !important; }
+body.is-secondary-active .fl-logo__gif-wrap { transform: translateX(-100%) !important; opacity: 0; }
 body.is-secondary-active .secondary-track { transform: translateX(0) !important; opacity: 1 !important; pointer-events: auto !important; }
 
 .back-icon-trigger { display: flex; align-items: center; justify-content: center; position: relative; height: var(--header-fs); }
@@ -196,7 +198,10 @@ body.is-secondary-active .secondary-track { transform: translateX(0) !important;
 <body>
 
 <div class="fl-logo__gif-wrap" id="ui-logo-gif-wrap">
-<img class="fl-logo__gif" id="ui-logo-gif" alt="Logo">
+  <!-- 为 Logo GIF 包裹链接 -->
+  <a id="ui-logo-link" class="fl-logo-link">
+    <img class="fl-logo__gif" id="ui-logo-gif" alt="Logo">
+  </a>
 </div>
 
 <header class="fl-header" id="ui-header">
@@ -217,7 +222,7 @@ body.is-secondary-active .secondary-track { transform: translateX(0) !important;
 
 <script>
 /**
-* CONFIG v5.2.6 - FOCUS MODE REPAIR
+* CONFIG v5.2.6 - LOGO LINK REPAIR
 */
 const CONFIG = {
 version: "5.2.6",
@@ -228,7 +233,7 @@ typography: {
   gallery: { font: "Arial, sans-serif", weight: "400", sizePC: "10px" }
 },
 header: {
-  logo: { gif: "https://folio.neuepoor.com/logo.gif", link: "https://neuepoor.com", text: "Foo", sizePC: "32px", sizeMobile: "18px" },
+  logo: { gif: "https://folio.neuepoor.com/logo.gif", link: "https://fo.neuepoor.com", text: "Foo", sizePC: "32px", sizeMobile: "18px" },
   secondary: { name: 'Archive', link: 'https://folio.neuepoor.com/archive' },
   backText: "Works",
   nav: [ 
@@ -271,12 +276,19 @@ applyTypography() {
 
 renderHeader() {
   const gif = document.getElementById('ui-logo-gif');
+  const logoLink = document.getElementById('ui-logo-link');
   const text = document.getElementById('ui-logo-text');
   const nav = document.getElementById('ui-nav');
   const secondaryNav = document.getElementById('ui-secondary-nav');
+  
+  // 绑定链接
   text.innerText = CONFIG.header.logo.text;
+  text.href = CONFIG.header.logo.link;
+  logoLink.href = CONFIG.header.logo.link;
+  
   gif.src = CONFIG.header.logo.gif;
   gif.onload = () => { gif.style.opacity = "1"; };
+  
   nav.innerHTML = CONFIG.header.nav.map(n => `<a href="${n.link}" class="fl-nav__link" ${n.triggerTrack ? 'data-nav-trigger="true"' : ''}>${n.name}</a>`).join('');
   secondaryNav.innerHTML = `<a href="${CONFIG.header.secondary.link}" class="fl-nav__link">${CONFIG.header.secondary.name}</a>`;
 },
@@ -338,8 +350,7 @@ renderMedia(src) { return `<div class="fl-cdn-container"><img class="fl-cdn-medi
 initFocusMode() {
   if (window.innerWidth <= 768) return;
   const body = document.body;
-  // 选择器中包含 .back-icon-trigger 以支持二级轨道
-  const selectors = 'a, .fl-item-wrapper, .fl-logo__gif, .fl-info-row, .fl-nav__link, .fl-info__title, .back-icon-trigger';
+  const selectors = 'a, .fl-item-wrapper, .fl-logo__gif, .fl-info-row, .fl-nav__link, .fl-info__title, .back-icon-trigger, .fl-logo-link';
   
   document.addEventListener('mouseover', (e) => { 
     if (e.target.closest(selectors)) {
