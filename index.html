@@ -1,14 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+<meta name="render" content="webkit">
 <title>Foo | Portfolio</title>
 <link id="favicon" rel="icon" type="image/webp" href="https://folio.neuepoor.com/favicon.webp">
 
 <style>
 /* ==========================================================================
-BASE CSS & DYNAMIC TOKENS
+   1. BASE CSS & DYNAMIC TOKENS | 基础样式与动态令牌
 ========================================================================= */
 :root {
 --fl-bg: #ffffff;
@@ -21,8 +23,13 @@ BASE CSS & DYNAMIC TOKENS
 --fl-reveal-dist: 30px;
 --fl-reveal-dur: 1.2s;
 --fl-font-fallback: "Arial", "Helvetica", sans-serif;
+--cr-height: 105px;
+--st-height: 21px;
+--bg-height: 230px;
 
+/* 默认光标 SVG (32px 全长十字) - 浅色模式(黑线) */
 --cur-default: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='0' x2='16' y2='32' stroke='black' stroke-width='1'/%3E%3Cline x1='0' y1='16' x2='32' y2='16' stroke='black' stroke-width='1'/%3E%3C/svg%3E") 16 16, crosshair;
+/* 交互光标 SVG (缩短 50%) - 浅色模式(黑线) */
 --cur-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='8' x2='16' y2='24' stroke='black' stroke-width='1'/%3E%3Cline x1='8' y1='16' x2='24' y2='16' stroke='black' stroke-width='1'/%3E%3C/svg%3E") 16 16, crosshair;
 }
 
@@ -31,6 +38,7 @@ BASE CSS & DYNAMIC TOKENS
 --fl-bg: #000000;
 --fl-text: #ffffff;
 --cur-default: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='0' x2='16' y2='32' stroke='white' stroke-width='1'/%3E%3Cline x1='0' y1='16' x2='32' y2='16' stroke='white' stroke-width='1'/%3E%3C/svg%3E") 16 16, crosshair;
+/* 交互光标 SVG (缩短 50%) - 深色模式(白线) */
 --cur-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cline x1='16' y1='8' x2='16' y2='24' stroke='white' stroke-width='1'/%3E%3Cline x1='8' y1='16' x2='24' y2='16' stroke='white' stroke-width='1'/%3E%3C/svg%3E") 16 16, crosshair;
 }
 }
@@ -39,201 +47,254 @@ BASE CSS & DYNAMIC TOKENS
 html, body { scrollbar-width: none; -ms-overflow-style: none; user-select: none; height: 100%; margin: 0; padding: 0; }
 html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 
-body { font-family: var(--fl-font-fallback); background: var(--fl-bg); color: var(--fl-text); overflow-x: hidden; line-height: 1.4; transition: background-color 0.25s ease-out; }
-.no-transition, .no-transition * { transition: none !important; }
-
-/* ==========================================================================
-   CURSOR SYSTEM
-   ========================================================================== */
-@media (min-width: 769px) {
-  *, html, body { cursor: var(--cur-default) !important; }
-  a, button, .fl-nav__link, .back-icon-link, .fl-logo__gif, .fl-item-wrapper, .fl-info-row, .fl-info__title, #trigger-wechat, #trigger-wechat-panel, [role="button"] { cursor: var(--cur-hover) !important; }
+body {
+font-family: var(--fl-font-fallback);
+background: var(--fl-bg);
+color: var(--fl-text);
+overflow-x: hidden;
+line-height: 1.4;
+transition: background-color 0.25s ease-out;
 }
 
 /* ==========================================================================
-    FOCUS MODE
+   2. NATIVE CSS CURSOR SYSTEM | 原生 CSS 光标切换方案
    ========================================================================== */
-.fl-nav__link, .fl-info-row, .fl-info__title, .fl-item-wrapper, .fl-logo__gif, .fl-cdn-container, .back-icon-link { transition: filter 0.5s var(--fl-ease), opacity 0.5s var(--fl-ease); }
-body.is-focus-mode .fl-nav__link, body.is-focus-mode .back-icon-link, body.is-focus-mode .fl-info-row, body.is-focus-mode .fl-info__title, body.is-focus-mode .fl-cdn-container { filter: blur(8px) !important; opacity: 0.4 !important; }
-body.is-focus-mode .fl-nav__link:hover, body.is-focus-mode .back-icon-link:hover, body.is-focus-mode .fl-info-row:hover, body.is-focus-mode .fl-info__title:hover, body.is-focus-mode .fl-item-wrapper:hover .fl-cdn-container { filter: blur(0) !important; opacity: 1 !important; }
+@media (min-width: 769px) {
+  *, html, body { cursor: var(--cur-default) !important; }
+  
+  a, button, .fl-nav__link, .back-icon-link, .fl-logo__gif, .fl-item-wrapper, 
+  .fl-info-row, .fl-info__title, #trigger-wechat, .fl-close-btn, .fl-gallery-link,
+  .fl-logo-text, [role="button"] { cursor: var(--cur-hover) !important; }
+  
+  a * , button *, .fl-item-wrapper * { cursor: inherit !important; }
+}
 
 /* ==========================================================================
-    LAYOUT & GRID
+   3. FOCUS MODE | 核心交互逻辑解耦 (仅限 PC 端物理生效)
    ========================================================================== */
-.fl-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--fl-gutter); margin: var(--fl-margin); padding: 80px 0 120px; }
+.fl-nav__link, .fl-info-row, .fl-info__title, .fl-item-wrapper, .fl-logo__gif, .fl-cdn-container, .back-icon-link, .fl-hero-special-text, .fl-contact-row, .fl-close-btn, .fl-gallery-link, .fl-logo-text {
+  transition: filter 0.5s var(--fl-ease), opacity 0.5s var(--fl-ease);
+}
+
+@media (min-width: 769px) {
+    body.is-focus-mode .fl-nav__link,
+    body.is-focus-mode .back-icon-link,
+    body.is-focus-mode .fl-info-row,
+    body.is-focus-mode .fl-info__title,
+    body.is-focus-mode .fl-cdn-container,
+    body.is-focus-mode .fl-hero-special-text,
+    body.is-focus-mode .fl-contact-row,
+    body.is-focus-mode .fl-close-btn,
+    body.is-focus-mode .fl-logo-text {
+      filter: blur(8px) !important;
+      opacity: 0.4 !important;
+    }
+
+    body.is-focus-mode .fl-nav__link:hover,
+    body.is-focus-mode .back-icon-link:hover,
+    body.is-focus-mode .fl-info-row:hover,
+    body.is-focus-mode .fl-info__title:hover,
+    body.is-focus-mode .fl-hero-special-text:hover,
+    body.is-focus-mode .fl-contact-row:hover,
+    body.is-focus-mode .fl-gallery-link:hover,
+    body.is-focus-mode .fl-close-btn:hover,
+    body.is-focus-mode .fl-logo-text:hover,
+    body.is-focus-mode .fl-item-wrapper:hover .fl-cdn-container {
+      filter: blur(0) !important;
+      opacity: 1 !important;
+    }
+}
+
+/* ==========================================================================
+   4. LAYOUT & GRID | 布局网格
+   ========================================================================== */
+.fl-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--fl-gutter); margin: var(--fl-margin); padding: 80px 0 120px; isolation: isolate; z-index: 10;}
 .fl-reveal { opacity: 0; transform: translateY(var(--fl-reveal-dist)); transition: opacity var(--fl-reveal-dur) var(--fl-ease), transform var(--fl-reveal-dur) var(--fl-ease); }
 .fl-reveal.is-visible { opacity: 1; transform: translateY(0); }
 
 /* ==========================================================================
-    COMPONENT: HEADER & TRACKS
+   5. GLOBAL COMPONENTS | 全局通用组件 (全端基础样式)
    ========================================================================== */
-.fl-logo__gif-wrap { position: fixed; top: 0; left: 4px; height: var(--fl-nav-h); display: flex; align-items: center; z-index: 1010; transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease); }
-.fl-logo-link { display: flex; align-items: center; height: 100%; text-decoration: none; }
-.fl-logo__gif { height: var(--logo-size-pc); opacity: 0; transition: opacity 0.3s var(--fl-ease); }
+.fl-header { 
+    position: fixed; width: 100%; z-index: 3000; display: flex; justify-content: space-between; align-items: center; padding: 0 4px; height: var(--fl-nav-h); top: 0; mix-blend-mode: difference; transition: transform 0.4s var(--fl-ease); 
+}
+.fl-header__bg { display: none; }
 
-.fl-header { position: fixed; width: 100%; z-index: 1000; display: flex; justify-content: space-between; align-items: center; padding: 0 4px; height: var(--fl-nav-h); top: 0; mix-blend-mode: difference; transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease), height 0.8s var(--fl-ease), background 0.8s var(--fl-ease); }
-.fl-logo-text { text-decoration: none; color: #fff; font-family: var(--header-font); font-size: var(--header-fs); font-weight: var(--header-fw); transition: opacity 0.3s var(--fl-ease); opacity: 0; display: flex; align-items: center; }
+.fl-logo-text { 
+    text-decoration: none; color: #fff; font-size: var(--header-fs); font-weight: var(--header-fw); opacity: 0; cursor: pointer; pointer-events: auto; transition: opacity 0.3s var(--fl-ease);
+}
+.fl-logo-text.is-replaced { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
 
-.fl-nav { display: flex; gap: 40px; align-items: center; }
-.fl-nav__link { font-family: var(--header-font); font-size: var(--header-fs); font-weight: var(--header-fw); color: #fff; text-decoration: none; }
+.fl-nav { display: flex; gap: 40px; }
 
-.secondary-track { position: fixed !important; top: 0; left: 0; width: 100% !important; transform: translateX(100%); opacity: 0; pointer-events: none !important; transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease), filter 0.6s var(--fl-ease) !important; z-index: 1005; }
-body.is-secondary-active .fl-header:not(.secondary-track) { transform: translateX(-100%) !important; opacity: 0; pointer-events: none !important; }
-body.is-secondary-active .fl-logo__gif-wrap { transform: translateX(-100%) !important; opacity: 0; }
-body.is-secondary-active .secondary-track { transform: translateX(0) !important; opacity: 1 !important; pointer-events: auto !important; }
+/* 核心修复：一/二级菜单共享同一份配置，去除了强行分类，确保任何端字号都完全一致 */
+.fl-nav__link { font-family: var(--header-font); font-size: var(--nav-fs); font-weight: var(--header-fw); color: #fff; text-decoration: none; transition: opacity 0.4s var(--fl-ease), filter 0.4s var(--fl-ease); }
+
+.fl-logo__gif-wrap-pc { 
+    position: fixed; top: 0; left: 4px; height: var(--fl-nav-h); display: flex; align-items: center; z-index: 3001; transition: transform 0.4s var(--fl-ease), opacity 0.6s var(--fl-ease); cursor: pointer;
+}
+.fl-logo__gif-wrap-pc::before { content: ''; position: absolute; top: -12px; bottom: -12px; left: -4px; right: -24px; }
+.fl-logo__gif-wrap-m { display: none; }
+.fl-logo__gif { height: var(--logo-size-pc); width: auto; opacity: 0; transition: opacity 0.3s var(--fl-ease); }
+
+.fl-logo-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2000; }
+.fl-logo-panel.is-panel-pinned { pointer-events: auto; }
+
+.fl-hero-special-text, .fl-contact-row, .fl-close-btn {
+    position: fixed; opacity: 0; filter: blur(15px); pointer-events: none; visibility: hidden; transition: opacity 0.4s var(--fl-ease), filter 0.4s var(--fl-ease), visibility 0.4s var(--fl-ease), transform 0.4s var(--fl-ease);
+}
+
+#ui-logo-panel.is-active .fl-hero-special-text,
+#ui-logo-panel.is-active .fl-contact-row,
+#ui-logo-panel.is-active .fl-close-btn { opacity: 1; filter: blur(0px); pointer-events: auto; visibility: visible; }
+
+.fl-hero-special-text { font-size: var(--special-text-fs); font-weight: 700; color: var(--fl-text); white-space: nowrap; }
+.fl-contact-row { display: flex; gap: 40px; align-items: center; }
+.fl-gallery-link { font-size: var(--contact-fs); font-weight: 700; color: var(--fl-text); text-decoration: none; transition: opacity 0.4s var(--fl-ease), filter 0.4s var(--fl-ease); }
+.fl-close-btn { position: absolute; right: 24px; bottom: 12px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--fl-text); }
+
+.fl-wechat-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 11000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.4s var(--fl-ease);
+}
+.fl-wechat-overlay.is-active { opacity: 1; visibility: visible; pointer-events: auto; }
+.fl-wechat-card { width: 320px; background: #fff; padding: 40px; text-align: center; color: #000; }
+.fl-wechat-qr { width: 100%; aspect-ratio: 1; margin: 0 auto 24px auto; }
+.fl-wechat-qr img { width: 100%; height: 100%; object-fit: contain; }
+
+/* 核心基础架构：将全局版的 secondary-track 提到移动端配置的前面，防止发生优先级错误 */
+.secondary-track { 
+  position: fixed !important; top: 0; left: 0; width: 100% !important; 
+  opacity: 0; pointer-events: none !important;
+  transition: transform 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease), filter 0.6s var(--fl-ease) !important; 
+  z-index: 1100;
+}
+
+body.is-secondary-active .fl-header:not(.secondary-track),
+body.is-secondary-active .fl-logo__gif-wrap-pc,
+body.is-secondary-active .fl-logo__gif-wrap-m,
+body.is-secondary-active .fl-logo-panel { 
+    opacity: 0 !important; pointer-events: none !important; 
+}
+body.is-secondary-active .secondary-track { opacity: 1 !important; pointer-events: auto !important; }
+
+#ui-main-grid { transition: filter 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease); }
 
 .back-icon-link { display: flex; align-items: center; justify-content: center; position: relative; height: var(--header-fs); text-decoration: none; color: inherit; }
-@media (min-width: 769px) { .secondary-track .back-icon-link { color: #fff !important; } }
-.back-icon-link::before { content: var(--back-text-content, "Works"); display: block; font-family: var(--header-font); font-size: var(--header-fs); font-weight: var(--header-fw); color: currentColor; animation: fl-dot-blink 2s infinite ease-in-out; }
+.back-icon-link::before { 
+  content: var(--back-text-content, "Works"); display: block; font-family: var(--header-font); font-size: var(--header-fs); font-weight: var(--header-fw); color: currentColor; animation: fl-dot-blink 2s infinite ease-in-out; 
+}
 @keyframes fl-dot-blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1.0; } }
 
-/* ==========================================================================
-    COMPONENT: FL-LOGO-PANEL
-   ========================================================================== */
-.fl-logo-panel {
-  position: fixed;
-  z-index: 950;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.8s var(--fl-ease), transform 0.8s var(--fl-ease), background 0.8s var(--fl-ease), height 0.8s var(--fl-ease);
-  display: flex;
-  flex-direction: column;
-}
-
-.fl-logo-panel__header { display: flex; flex-direction: column; }
-
-.fl-logo-panel__title, .fl-logo-panel__intro {
-  font-family: var(--header-font);
-  font-size: var(--header-fs);
-  font-weight: var(--header-fw);
-  display: block;
-  word-wrap: break-word;
-  white-space: normal;
-  line-height: 1.2;
-}
-
-.fl-logo-panel__title { margin-bottom: 0.5em; }
-.fl-logo-panel__intro { margin-bottom: 1.2em; opacity: 0.95; }
-
-.fl-logo-panel__content {
-  font-family: var(--info-font);
-  font-size: var(--info-fs);
-  line-height: 1.8;
-}
-
-.fl-logo-panel__content a { color: inherit; text-decoration: none; border-bottom: none; }
-
-/* PC 端布局 */
+/* PC 专属修正 */
 @media (min-width: 769px) {
-  .fl-logo-panel {
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    padding: 80px 24px 40px;
-    background: rgba(255, 255, 255, 0.01); 
-    backdrop-filter: blur(40px) saturate(180%);
-    transform: scale(1.02);
-    justify-content: space-between;
-  }
-  
-  @media (prefers-color-scheme: dark) {
-    .fl-logo-panel { background: rgba(0, 0, 0, 0.3); }
-  }
-
-  body.is-panel-open .fl-logo-panel {
-    opacity: 1;
-    pointer-events: auto;
-    transform: scale(1);
-  }
-
-  .fl-logo-panel__content { margin-top: auto; }
-}
-
-/* 手机端布局 */
-@media (max-width: 768px) {
-  .fl-logo-panel {
-    position: absolute;
-    top: 24px;
-    left: 16px;
-    width: calc(100% - 32px);
-    padding: 0;
-    background: transparent;
-    backdrop-filter: none;
-    transform: translateY(10px);
-    transition: opacity 0.4s var(--fl-ease), transform 0.4s var(--fl-ease);
-  }
-  
-  body.is-panel-open .fl-logo-panel {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-  }
-  
-  .fl-logo-panel__title, .fl-logo-panel__intro { font-size: var(--header-fs-m); }
-
-  body.is-panel-open .fl-header {
-    height: auto !important; 
-    min-height: 380px !important;
-    align-items: flex-end; 
-    padding-top: 40px !important;
-    padding-bottom: 12px !important;
-  }
+    #ui-hero-special-text { display: none !important; }
+    body:not(.is-secondary-active) #ui-main-grid { filter: blur(8px); opacity: 0.2; pointer-events: none; }
+    .secondary-track .back-icon-link { color: #fff !important; }
 }
 
 /* ==========================================================================
-    MOBILE PATCH
-   ========================================================================== */
-@media (max-width: 768px) {
-  body.is-focus-mode .fl-nav__link, body.is-focus-mode .back-icon-link, body.is-focus-mode .fl-info-row, body.is-focus-mode .fl-info__title, body.is-focus-mode .fl-cdn-container { filter: none !important; opacity: 1 !important; }
-  
-  .fl-header.is-nav-hidden, .fl-logo__gif-wrap.is-nav-hidden { transform: translateY(100px) !important; opacity: 0 !important; pointer-events: none !important; }
-  
-  #ui-secondary-header.is-nav-hidden { transform: translateX(0) translateY(100px) !important; opacity: 0 !important; }
-  body.is-secondary-active .secondary-track:not(.is-nav-hidden) { transform: translateX(0) translateY(0) !important; opacity: 1 !important; }
-  
-  .fl-grid { padding: 4px 0 120px; }
-  
-  .fl-logo__gif-wrap { top: auto !important; bottom: 24px !important; left: 48px !important; height: var(--fl-nav-h-m) !important; z-index: 1010; mix-blend-mode: normal !important; }
-  .fl-logo__gif { height: var(--logo-size-m) !important; }
-  
-  .fl-header { top: auto !important; bottom: 24px !important; left: 32px !important; width: calc(100% - 64px) !important; height: var(--fl-nav-h-m) !important; padding: 0 16px !important; border-radius: 12px !important; mix-blend-mode: normal !important; background: rgba(255, 255, 255, 0.2) !important; backdrop-filter: blur(16px) saturate(160%) !important; border: 0.5px solid rgba(0, 0, 0, 0.1) !important; z-index: 1000; overflow: hidden; }
-  
-  @media (prefers-color-scheme: dark) { 
-    .fl-header { background: rgba(28, 28, 30, 0.45) !important; border: 0.5px solid rgba(255, 255, 255, 0.1) !important; } 
-    .fl-nav__link, .secondary-track .back-icon-link { color: var(--fl-text) !important; } 
-  }
-  
-  .secondary-track { left: 32px !important; bottom: 24px !important; top: auto !important; height: var(--fl-nav-h-m) !important; width: calc(100% - 64px) !important; }
-  .fl-nav { gap: 20px !important; }
-  .fl-nav__link { font-size: var(--header-fs-m) !important; color: var(--fl-text) !important; }
-  .back-icon-link::before { font-size: var(--header-fs-m) !important; }
-}
-
-/* ==========================================================================
-    CONTENT STYLES
+   6. CONTENT STYLES | 页面内容样式
    ========================================================================== */
 .fl-info { margin-bottom: 20px; font-family: var(--info-font); font-size: var(--info-fs); color: var(--fl-text); opacity: 0.8; }
-.fl-info__title { display: block; margin-bottom: 1.2em; font-weight: normal; }
+.fl-info__title { display: block; margin-bottom: 4.2em; font-weight: normal; }
 .fl-info-row { display: block; }
 .fl-info a { color: inherit; text-decoration: none; }
 .fl-item-wrapper { position: relative; }
 .fl-cdn-container { width: 100%; overflow: hidden; background-color: var(--fl-bg); min-height: 200px; }
 .fl-cdn-media { width: 100%; height: auto; display: block; opacity: 0; filter: blur(20px); transition: all 1.2s var(--fl-ease); }
 .is-loaded .fl-cdn-media { opacity: 1; filter: blur(0); }
-.fl-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: 0.4s; backdrop-filter: blur(10px); }
-.fl-overlay.is-active { opacity: 1; pointer-events: auto; }
-.fl-overlay img { width: 200px; height: auto; display: block; }
+
+/* ==========================================================================
+   7. MOBILE OVERRIDES | 手机端最高优先级覆盖
+   ========================================================================== */
+@media (max-width: 768px) {
+    .fl-logo__gif-wrap-pc { display: none !important; }
+    
+    .fl-header__bg {
+        display: block; position: fixed; bottom: 24px; left: 32px; width: calc(100% - 64px); height: 44px; background: rgba(255, 255, 255, 0.2) !important; backdrop-filter: blur(16px) saturate(160%) !important; border: 0.5px solid rgba(0, 0, 0, 0.1) !important; border-radius: 12px !important; z-index: 1000 !important; pointer-events: none; transition: height 0.4s var(--fl-ease), transform 0.4s var(--fl-ease), opacity 0.4s var(--fl-ease) !important;
+    }
+    .fl-header__bg.is-expanded { height: var(--bg-height) !important; }
+    
+    .fl-logo-panel { z-index: 1004 !important; transition: transform 0.4s var(--fl-ease), opacity 0.4s var(--fl-ease) !important; }
+    .fl-close-btn { top: auto !important; bottom: calc(var(--bg-height) - 24px) !important; right: 48px !important; }
+
+    .fl-hero-special-text { font-family: "Arial", sans-serif !important; font-size: var(--special-text-fs-m) !important; font-weight: 700 !important; line-height: 1 !important; width: calc(50% - 24px) !important; white-space: normal !important; top: auto !important; bottom: calc(80px + var(--cr-height) + 24px) !important; left: 48px !important; transform: none !important; }
+    
+    .fl-contact-row { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: var(--contact-gap-m, 16px) !important; width: calc(50% - 24px) !important; top: auto !important; bottom: 80px !important; left: 48px !important; transform: none !important; }
+    .fl-contact-row .fl-gallery-link { font-family: "Arial", sans-serif !important; font-size: var(--contact-fs-m) !important; font-weight: 700 !important; line-height: 1.05 !important; }
+
+    .fl-header { top: auto !important; bottom: 24px !important; left: 32px !important; width: calc(100% - 64px) !important; height: 44px !important; padding: 0 16px !important; border-radius: 12px !important; background: transparent !important; backdrop-filter: none !important; border: none !important; z-index: 1005 !important; mix-blend-mode: normal !important; transition: transform 0.4s var(--fl-ease), opacity 0.4s var(--fl-ease) !important; }
+    
+    .fl-logo__gif-wrap-m { display: flex !important; position: fixed; top: auto !important; bottom: 24px !important; left: 48px !important; height: 44px !important; align-items: center !important; z-index: 1006 !important; transition: transform 0.4s var(--fl-ease), opacity 0.4s var(--fl-ease) !important; cursor: pointer; }
+    .fl-logo__gif-wrap-m::before { content: ''; position: absolute; top: -16px; bottom: -16px; left: -16px; right: -24px; }
+    .fl-logo__gif-wrap-m .fl-logo__gif { height: 18px !important; opacity: 1 !important; }
+    
+    .fl-nav { position: absolute !important; bottom: 0 !important; right: 16px !important; height: 44px !important; display: flex !important; align-items: center !important; gap: 20px !important; }
+    
+    /* 核心修复：这个规则现在一劳永逸地管控主菜单和二级菜单，绝不覆写。 */
+    .fl-nav__link { font-size: var(--nav-fs-m) !important; color: var(--fl-text) !important; opacity: 1 !important; filter: none !important; }
+    
+    /* 核心架构修复：将 secondary-track 放于文件最末端的媒体查询中，保证宽度和位置能够正确覆盖全局版的 100% 规则 */
+    .secondary-track { 
+        left: 32px !important; bottom: 24px !important; top: auto !important; 
+        height: 44px !important; width: calc(100% - 64px) !important; 
+        transition: transform 0.4s var(--fl-ease), opacity 0.4s var(--fl-ease) !important; 
+    }
+    
+    /* 核心修复：为二级菜单左侧返回按钮设置绝对排版，完美对齐 44px 背景框 */
+    .back-icon-link {
+        position: absolute !important;
+        left: 16px !important;
+        top: 0 !important;
+        height: 44px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+    }
+    .back-icon-link::before { font-size: var(--header-fs-m) !important; }
+
+    body .is-nav-hidden, body.is-secondary-active .secondary-track.is-nav-hidden { 
+        opacity: 0 !important; transform: translateY(16px) scale(0.8) translateZ(0) !important; pointer-events: none !important; 
+    }
+}
+
+/* ==========================================================================
+   8. DARK MODE OVERRIDES | 手机深色模式终极覆盖
+   ========================================================================== */
+@media (max-width: 768px) and (prefers-color-scheme: dark) {
+    .fl-header__bg { background: rgba(28, 28, 30, 0.45) !important; border: 0.5px solid rgba(255, 255, 255, 0.1) !important; }
+    .secondary-track .back-icon-link { color: var(--fl-text) !important; }
+}
+
 </style>
 </head>
-<body class="is-secondary-active no-transition">
+<body>
 
-<div class="fl-logo__gif-wrap" id="ui-logo-gif-wrap">
-  <a href="javascript:void(0)" id="ui-logo-trigger" class="fl-logo-link">
-    <img class="fl-logo__gif" id="ui-logo-gif" alt="Logo">
-  </a>
+<div class="fl-header__bg" id="ui-header-bg"></div>
+
+<div class="fl-logo-panel" id="ui-logo-panel">
+    <div class="fl-hero-special-text" id="ui-hero-special-text"></div>
+    <div class="fl-contact-row" id="ui-contact-row"></div>
+    
+    <div class="fl-close-btn" id="ui-close-btn">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    </div>
+</div>
+
+<div class="fl-logo__gif-wrap-pc" id="ui-logo-gif-wrap-pc">
+    <img class="fl-logo__gif" id="ui-logo-gif-pc" alt="Logo" draggable="false" decoding="async">
+</div>
+
+<div class="fl-logo__gif-wrap-m" id="ui-logo-gif-wrap-m">
+    <img class="fl-logo__gif" id="ui-logo-gif-m" alt="Logo" draggable="false" decoding="async">
 </div>
 
 <header class="fl-header" id="ui-header">
-  <a href="#" class="fl-logo-text" id="ui-logo-text">Foo</a>
-  <nav class="fl-nav" id="ui-nav"></nav>
+    <a href="https://fo.neuepoor.com" class="fl-logo-text" id="ui-logo-text">Foo</a>
+    <nav class="fl-nav" id="ui-nav"></nav>
 </header>
 
 <header class="fl-header secondary-track" id="ui-secondary-header">
@@ -243,25 +304,19 @@ body.is-secondary-active .secondary-track { transform: translateX(0) !important;
 
 <main class="fl-grid" id="ui-main-grid"></main>
 
-<!-- 独立 Panel -->
-<div class="fl-logo-panel" id="ui-logo-panel">
-  <div class="fl-logo-panel__header">
-    <b class="fl-logo-panel__title" id="ui-panel-title"></b>
-    <span class="fl-logo-panel__intro" id="ui-panel-intro"></span>
-  </div>
-  <div class="fl-logo-panel__content" id="ui-panel-content"></div>
-</div>
-
-<div class="fl-overlay" id="ui-wechat-overlay">
-<img src="https://folio.neuepoor.com/wechatsuckboyz.svg" alt="WeChat">
+<div class="fl-wechat-overlay" id="ui-wechat-overlay">
+    <div class="fl-wechat-card">
+        <div class="fl-wechat-qr" id="ui-wechat-qr"><img src="https://folio.neuepoor.com/wechatsuckboyz.svg" alt="WeChat"></div>
+        <div class="fl-wechat-id" id="ui-wechat-id">WeChat: NeuePoor</div>
+    </div>
 </div>
 
 <script>
 /**
-* CONFIG v2.3 - Archive 2.3 (Intro & Responsive Height Update)
+* CONFIG 融合版: 组合 Index 作品配置与 Home2.0 头部配置
 */
 const CONFIG = {
-version: "2.3",
+version: "5.2.9",
 seo: { title: "Foo | Portfolio", favicon: "https://folio.neuepoor.com/favicon.webp" },
 typography: {
   header: { font: "Arial, sans-serif", weight: "700", sizePC: "32px", sizeMobile: "21px" },
@@ -269,21 +324,34 @@ typography: {
   gallery: { font: "Arial, sans-serif", weight: "400", sizePC: "10px" }
 },
 header: {
-  logo: { gif: "https://folio.neuepoor.com/logo.gif", link: "https://fo.neuepoor.com", text: "Foo", sizePC: "32px", sizeMobile: "18px" },
-  logoPanel: {
-    title: "Hi,I'm Fo.",
-    intro: "A multi-disciplinary designer with focus on Graphic&Illustration,Creative Direction, Branding,Visual Identities, Packaging, Website, and Print& Editorial Design.If you are looking for a designer who excles in BrandStrategy/Visual Direction/Print Works/Products/IP/Curatorial/Grid Layout/Website design/Typeface Customization.<br/>Please contact me.",
-    content: `<a href="mailto:poorleaglguy@qq.com">Email</a><br><a href="https://www.instagram.com/neuepoor" target="_blank">Instagram</a><br><a href="https://github.com/NeuePoor" target="_blank">Github</a><br><a href="https://xhslink.com/m/9qPnrun1Dh9" target="_blank">小红书</a><br><span id="trigger-wechat-panel" style="cursor:pointer">Wechat</span>`
-  },
-  secondary: [ { name: 'Index', link: 'https://works.neuepoor.com' }, { name: 'Archive', link: 'https://Archive.neuepoor.com' } ],
+  logo: { gif: "https://folio.neuepoor.com/logo.gif", link: "https://fo.neuepoor.com", text: "Foo", font: "Arial, sans-serif", weight: "700", sizePC: "32px", sizeMobile: "clamp(16px, 5vw, 21px)" },
+  secondary: [
+    { name: 'Index', link: 'https://works.neuepoor.com', sizePC: "32px", sizeMobile: "clamp(14px, 5vw, 21px)" },
+    { name: 'Archive', link: 'https://Archive.neuepoor.com', sizePC: "32px", sizeMobile: "clamp(14px, 5vw, 21px)" }
+  ],
   back: { text: "Works●" },
-  nav: [ { name: 'Works', link: 'javascript:void(0)', isSecondaryTrigger: true }, { name: '(Play)', link: 'https://play.neuepoor.com', isSecondaryTrigger: false }, { name: 'Me', link: 'https://me.neuepoor.com', isSecondaryTrigger: false } ]
+  nav: [ 
+    { name: 'Works', link: 'https://works.neuepoor.com', isSecondaryTrigger: true, sizePC: "32px", sizeMobile: "clamp(14px, 5vw, 21px)" }, 
+    { name: '(Play)', link: 'https://play.neuepoor.com', isSecondaryTrigger: false, sizePC: "32px", sizeMobile: "clamp(14px, 5vw, 21px)" }, 
+    { name: 'Me', link: 'https://me.neuepoor.com', isSecondaryTrigger: false, sizePC: "32px", sizeMobile: "clamp(14px, 5vw, 21px)" } 
+  ]
+},
+logoPanel: {
+  specialText: { text: "Hi, I'm Fo", sizePC: "32px", sizeMobile: "clamp(14px, 6vw, 21px)" },
+  contact: [
+      { name: "Email", link: "mailto:poorleaglguy@qq.com" },
+      { name: "Instagram", link: "https://www.instagram.com/neuepoor" },
+      { name: "Github", link: "https://github.com/NeuePoor" },
+      { name: "小红书", link: "https://xhslink.com/m/9qPnrun1Dh9" },
+      { name: "WeChat", link: "#", isWeChat: true, qrText: "WeChat: NeuePoor", svgSize: "100%" }
+  ],
+  contactStyles: { sizePC: "21px", sizeMobile: "clamp(10px, 5vw, 12px)", gapMobile: "10px" }
 },
 info: {
   _lock: true,
   data: [
-    { title: "Tags", content: "#Branding<br>#Vision identity<br>#Look Book<br>#Interface<br>#Packaging<br>#Editorial<br>#Apparel", span: 6 },
-    { title: "Year", content: "2018<br>2019<br>2020<br>2021<br>2022<br>2023<br>2024<br>2025<br>2026", span: 4 },
+    { title: "Works", content: "Branding<br>Vision identity<br>Look Book<br>Interface<br>Packaging<br>Editorial<br>Apparel", span: 6 },
+    { title: "Service", content: "Creative Direction<br>Art Direction<br>Graphic<br>Illustration<br>Motion<br>Typeface", span: 4 },
     { title: "Contacts", content: `<a href="mailto:poorleaglguy@qq.com">Email</a><br><a href="https://www.instagram.com/neuepoor" target="_blank">Instagram</a><br><a href="https://github.com/NeuePoor" target="_blank">Github</a><br><a href="https://xhslink.com/m/9qPnrun1Dh9" target="_blank">小红书</a><br><span id="trigger-wechat" style="cursor:pointer">Wechat</span>`, span: 2 }
   ]
 },
@@ -300,90 +368,203 @@ gallery: {
 };
 
 const ENGINE = {
-lastIsMobile: null,
+isMobile() { return window.innerWidth <= 768; },
 
 applyTypography() {
   const root = document.documentElement;
-  const t = CONFIG.typography; const l = CONFIG.header.logo;
+  const t = CONFIG.typography; 
+  const hl = CONFIG.header.logo;
+  const pnl = CONFIG.logoPanel;
+  
   const props = {
-    '--header-font': t.header.font, '--header-fw': t.header.weight, '--header-fs': t.header.sizePC, '--header-fs-m': t.header.sizeMobile,
-    '--info-font': t.info.font, '--info-fs': t.info.sizePC, '--logo-size-pc': l.sizePC, '--logo-size-m': l.sizeMobile,
+    '--header-font': hl.font, '--header-fw': hl.weight, '--header-fs': hl.sizePC, '--header-fs-m': hl.sizeMobile,
+    '--nav-fs': CONFIG.header.nav[0].sizePC, '--nav-fs-m': CONFIG.header.nav[0].sizeMobile,
+    '--special-text-fs': pnl.specialText.sizePC, '--special-text-fs-m': pnl.specialText.sizeMobile,
+    '--contact-fs': pnl.contactStyles.sizePC, '--contact-fs-m': pnl.contactStyles.sizeMobile,
+    '--contact-gap-m': pnl.contactStyles.gapMobile || '16px',
+    '--info-font': t.info.font, '--info-fs': t.info.sizePC, 
+    '--logo-size-pc': hl.sizePC, '--logo-size-m': hl.sizeMobile,
     '--back-text-content': `"${CONFIG.header.back.text}"`
   };
   Object.entries(props).forEach(([k, v]) => root.style.setProperty(k, v));
 },
 
 renderHeader() {
-  const gif = document.getElementById('ui-logo-gif');
-  const trigger = document.getElementById('ui-logo-trigger');
+  const gPC = document.getElementById('ui-logo-gif-pc');
+  const gM = document.getElementById('ui-logo-gif-m');
   const text = document.getElementById('ui-logo-text');
   const navContainer = document.getElementById('ui-nav');
   const secondaryNavContainer = document.getElementById('ui-secondary-nav');
   const backIconLink = document.getElementById('ui-back-icon-link');
   
-  document.getElementById('ui-panel-title').innerText = CONFIG.header.logoPanel.title;
-  document.getElementById('ui-panel-intro').innerHTML = CONFIG.header.logoPanel.intro;
-  document.getElementById('ui-panel-content').innerHTML = CONFIG.header.logoPanel.content;
-  text.innerText = CONFIG.header.logo.text;
-  text.href = CONFIG.header.logo.link;
-  gif.src = CONFIG.header.logo.gif;
-  gif.onload = () => { gif.style.opacity = "1"; };
+  if (gPC && gM && text && navContainer) {
+      text.innerText = CONFIG.header.logo.text;
+      text.href = CONFIG.header.logo.link;
+      
+      gPC.src = CONFIG.header.logo.gif;
+      gM.src = CONFIG.header.logo.gif;
+      gPC.onload = () => { gPC.style.opacity = "1"; text.classList.add('is-replaced'); };
+      gM.onload = () => { gM.style.opacity = "1"; text.classList.add('is-replaced'); };
+      
+      navContainer.innerHTML = '';
+      CONFIG.header.nav.forEach(n => {
+        const a = document.createElement('a');
+        a.href = n.link || '#';
+        a.className = 'fl-nav__link';
+        a.innerText = n.name;
+        if (n.isSecondaryTrigger) {
+          a.onclick = (e) => {
+            e.preventDefault();
+            document.body.classList.add('is-secondary-active');
+          };
+        }
+        navContainer.appendChild(a);
+      });
+  }
 
-  this.syncPanelPosition();
-
-  trigger.onclick = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    document.body.classList.toggle('is-panel-open');
-  };
-
-  document.addEventListener('click', (e) => {
-    if (document.body.classList.contains('is-panel-open')) {
-      const isInsidePanelHeader = e.target.closest('.fl-logo-panel__header');
-      const isInsidePanelContent = e.target.closest('.fl-logo-panel__content');
-      const isTrigger = trigger.contains(e.target);
-      if (!isInsidePanelHeader && !isInsidePanelContent && !isTrigger) {
-        document.body.classList.remove('is-panel-open');
-      }
-    }
-  });
+  // 二级导航返回按钮映射：移除二级激活状态，呼出通用组件
+  if (backIconLink) {
+      const handleOpenPrimary = (e) => {
+        e.preventDefault();
+        document.body.classList.remove('is-secondary-active');
+        if (ENGINE.isMobile()) ENGINE.showHeroMobile();
+        else ENGINE.showHeroPC(true);
+      };
+      
+      backIconLink.onclick = handleOpenPrimary;
+      backIconLink.onmouseenter = handleOpenPrimary; // 增加悬停触发打开一级轨道
+  }
   
-  backIconLink.onclick = (e) => { e.preventDefault(); document.body.classList.remove('is-secondary-active'); };
-  
-  navContainer.innerHTML = '';
-  CONFIG.header.nav.forEach(n => {
-    const a = document.createElement('a');
-    a.href = n.link || '#';
-    a.className = 'fl-nav__link';
-    a.innerText = n.name;
-    if (n.isSecondaryTrigger) a.onclick = (e) => { e.preventDefault(); document.body.classList.add('is-secondary-active'); };
-    navContainer.appendChild(a);
-  });
-  secondaryNavContainer.innerHTML = CONFIG.header.secondary.map(s => `<a href="${s.link}" class="fl-nav__link">${s.name}</a>`).join('');
+  if (secondaryNavContainer) {
+      secondaryNavContainer.innerHTML = CONFIG.header.secondary.map(s => `<a href="${s.link}" class="fl-nav__link">${s.name}</a>`).join('');
+  }
 },
 
-syncPanelPosition() {
-  const isMobile = window.innerWidth <= 768;
-  if (this.lastIsMobile === isMobile) return;
-  const panel = document.getElementById('ui-logo-panel');
-  const header = document.getElementById('ui-header');
-  document.body.classList.remove('is-panel-open');
-  if (isMobile) {
-    if (panel.parentElement !== header) header.prepend(panel);
-  } else {
-    if (panel.parentElement !== document.body) document.body.appendChild(panel);
-  }
-  this.lastIsMobile = isMobile;
-  this.initWeChat();
+renderLogoPanel() {
+    const st = document.getElementById('ui-hero-special-text');
+    const cr = document.getElementById('ui-contact-row');
+    if(!st || !cr) return;
+    
+    st.innerText = CONFIG.logoPanel.specialText.text;
+    
+    const wechatConfig = CONFIG.logoPanel.contact.find(l => l.isWeChat);
+    if (wechatConfig) {
+        const wId = document.getElementById('ui-wechat-id');
+        const wQr = document.getElementById('ui-wechat-qr');
+        if (wId && wechatConfig.qrText) wId.innerText = wechatConfig.qrText;
+        if (wQr && wechatConfig.svgSize) wQr.style.width = wechatConfig.svgSize;
+    }
+    
+    cr.innerHTML = CONFIG.logoPanel.contact.map(l => `<a href="${l.link}" class="fl-gallery-link" ${l.isWeChat ? 'id="trigger-wechat"' : 'target="_blank"'}>${l.name}</a>`).join('');
+    this.initWeChatTrigger();
+},
+
+resetAllStates() {
+    const p = document.getElementById('ui-logo-panel');
+    const bg = document.getElementById('ui-header-bg');
+    if (p) p.classList.remove('is-panel-pinned', 'is-active');
+    if (bg) bg.classList.remove('is-expanded');
+    document.body.classList.remove('is-pin-action');
+},
+
+showHeroMobile() {
+    const p = document.getElementById('ui-logo-panel');
+    const st = document.getElementById('ui-hero-special-text'); 
+    const cr = document.getElementById('ui-contact-row');
+    const bg = document.getElementById('ui-header-bg');
+    if(!p) return;
+    
+    const stHeight = st.getBoundingClientRect().height || 21;
+    const crHeight = cr.getBoundingClientRect().height || 105; 
+    document.documentElement.style.setProperty('--cr-height', `${crHeight}px`);
+    document.documentElement.style.setProperty('--bg-height', `${24 + stHeight + 24 + crHeight + 56}px`);
+    p.classList.add('is-panel-pinned', 'is-active');
+    if (bg) bg.classList.add('is-expanded');
+},
+
+showHeroPC(isPin = false) {
+    const p = document.getElementById('ui-logo-panel');
+    const cr = document.getElementById('ui-contact-row');
+    if(!p) return;
+
+    cr.style.left = '4px'; 
+    cr.style.bottom = '12px';
+    
+    if (isPin) { p.classList.add('is-panel-pinned'); document.body.classList.add('is-pin-action'); }
+    p.classList.add('is-active');
+},
+
+hideHero() { 
+    ENGINE.resetAllStates();
+    // 核心联通：面板隐藏后，强制为 body 补充二级激活状态恢复原页面级观感
+    document.body.classList.add('is-secondary-active');
+},
+
+initTriggersAndInteractions() {
+    const p = document.getElementById('ui-logo-panel');
+    const lwPC = document.getElementById('ui-logo-gif-wrap-pc');
+    const lwM = document.getElementById('ui-logo-gif-wrap-m');
+    const closeBtn = document.getElementById('ui-close-btn'); 
+    const tLogo = document.getElementById('ui-logo-text');
+    if(!p) return;
+
+    if (lwPC) {
+        lwPC.onmouseenter = () => { if (window.innerWidth > 768 && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); };
+        lwPC.onmouseleave = () => { if (window.innerWidth > 768 && !p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); };
+        lwPC.onclick = (e) => { 
+            e.stopPropagation();
+            if (window.innerWidth <= 768) return; 
+            if (p.classList.contains('is-active') && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); else ENGINE.showHeroPC(true); 
+        };
+    }
+    
+    if (tLogo) {
+        tLogo.onmouseenter = () => { if (window.innerWidth > 768 && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); };
+        tLogo.onmouseleave = () => { if (window.innerWidth > 768 && !p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); };
+        tLogo.onclick = (e) => { 
+            e.preventDefault(); e.stopPropagation(); 
+            if (window.innerWidth <= 768) { if (p.classList.contains('is-active')) ENGINE.hideHero(); else ENGINE.showHeroMobile(); } 
+            else { if (p.classList.contains('is-active') && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); else ENGINE.showHeroPC(true); }
+        };
+    }
+
+    if (lwM) { 
+        lwM.onclick = (e) => { 
+            e.stopPropagation();
+            if (window.innerWidth > 768) return; 
+            if (p.classList.contains('is-active')) ENGINE.hideHero(); else ENGINE.showHeroMobile(); 
+        };
+    }
+    
+    if (p) { p.onclick = (e) => { if (e.target === p && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); }; }
+    if (closeBtn) { closeBtn.onclick = (e) => { e.stopPropagation(); ENGINE.hideHero(); }; }
+},
+
+initSecondaryNav() {
+  const body = document.body;
+  setTimeout(() => { body.classList.add('is-secondary-active'); }, 100);
 },
 
 initScrollInteraction() {
-  const elements = [document.getElementById('ui-header'), document.getElementById('ui-logo-gif-wrap'), document.getElementById('ui-secondary-header')].filter(el => el !== null);
+  const elements = [
+    document.getElementById('ui-header'), 
+    document.getElementById('ui-logo-gif-wrap-pc'),
+    document.getElementById('ui-logo-gif-wrap-m'),
+    document.getElementById('ui-header-bg'),
+    document.getElementById('ui-hero-special-text'),
+    document.getElementById('ui-contact-row'),
+    document.getElementById('ui-close-btn'),
+    document.getElementById('ui-secondary-header')
+  ].filter(el => el !== null);
+  
   let isScrolling;
   window.addEventListener('scroll', () => {
-    if (window.innerWidth <= 768 && !document.body.classList.contains('is-panel-open')) {
+    if (window.innerWidth <= 768) {
       elements.forEach(el => el.classList.add('is-nav-hidden'));
       window.clearTimeout(isScrolling);
-      isScrolling = setTimeout(() => { elements.forEach(el => el.classList.remove('is-nav-hidden')); }, 250); 
+      isScrolling = setTimeout(() => {
+        elements.forEach(el => el.classList.remove('is-nav-hidden'));
+      }, 250); 
     }
   }, { passive: true });
 },
@@ -396,34 +577,45 @@ buildContent() {
   }).join('');
   const galleryHTML = CONFIG.gallery.items.map(item => `<div class="fl-item-wrapper fl-reveal" style="grid-column: span ${item.span || 12}">${this.renderMedia(item.src)}</div>`).join('');
   grid.innerHTML = infoHTML + galleryHTML;
-  this.initReveal(); this.initWeChat();
+  this.initReveal();
+  
+  this.initWeChatTrigger();
+  
   document.querySelectorAll('.fl-cdn-media').forEach(media => {
     const markLoaded = () => media.closest('.fl-cdn-container').classList.add('is-loaded');
     if (media.complete) markLoaded(); else media.addEventListener('load', markLoaded);
   });
 },
 
-initWeChat() {
+initWeChatTrigger() {
+  const triggers = document.querySelectorAll('#trigger-wechat');
   const overlay = document.getElementById('ui-wechat-overlay');
-  const triggers = [document.getElementById('trigger-wechat'), document.getElementById('trigger-wechat-panel')];
-  if (overlay) {
-    triggers.forEach(t => { 
-      if (t) {
-        t.onclick = (e) => { e.stopPropagation(); overlay.classList.add('is-active'); };
-      }
-    });
-    overlay.onclick = () => overlay.classList.remove('is-active');
+  if (overlay) { 
+      triggers.forEach(t => { t.onclick = (e) => { e.preventDefault(); overlay.classList.add('is-active'); }; });
+      overlay.onclick = () => overlay.classList.remove('is-active'); 
   }
 },
 
 renderMedia(src) { return `<div class="fl-cdn-container"><img class="fl-cdn-media" src="${src}" loading="lazy"></div>`; },
 
 initFocusMode() {
-  if (window.innerWidth <= 768) return;
   const body = document.body;
-  const selectors = 'a:not(.fl-logo-panel__content a), .fl-item-wrapper, .fl-logo__gif, .fl-info-row, .fl-nav__link, .fl-info__title, .back-icon-link, .fl-logo-link, #ui-logo-trigger, #trigger-wechat';
-  document.addEventListener('mouseover', (e) => { if (e.target.closest(selectors)) body.classList.add('is-focus-mode'); });
-  document.addEventListener('mouseout', (e) => { if (!e.relatedTarget || !e.relatedTarget.closest(selectors)) body.classList.remove('is-focus-mode'); });
+  const selectors = 'a, .fl-item-wrapper, .fl-logo__gif, .fl-info-row, .fl-nav__link, .fl-info__title, .back-icon-link, .fl-logo-link, .fl-hero-special-text, .fl-gallery-link, .fl-close-btn, .fl-logo-text';
+  
+  // 核心修复：内部校验屏幕宽度，配合 CSS 媒体查询，彻底杜绝移动端的误触模糊 Bug
+  document.addEventListener('mouseover', (e) => { 
+    if (window.innerWidth <= 768) return;
+    if (e.target.closest(selectors)) {
+      body.classList.add('is-focus-mode');
+    }
+  });
+  
+  document.addEventListener('mouseout', (e) => { 
+    if (window.innerWidth <= 768) return;
+    if (!e.relatedTarget || !e.relatedTarget.closest(selectors)) {
+      body.classList.remove('is-focus-mode');
+    }
+  });
 },
 
 initReveal() {
@@ -431,18 +623,15 @@ initReveal() {
   document.querySelectorAll('.fl-reveal').forEach(el => observer.observe(el));
 },
 
-debounce(func, wait) {
-  let timeout;
-  return function() {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, arguments), wait);
-  };
-},
-
 start() {
-  this.applyTypography(); this.renderHeader(); this.buildContent(); this.initScrollInteraction(); this.initFocusMode();
-  window.addEventListener('resize', this.debounce(() => { this.syncPanelPosition(); }, 100));
-  requestAnimationFrame(() => { requestAnimationFrame(() => { document.body.classList.remove('no-transition'); }); });
+  this.applyTypography(); 
+  this.renderHeader();
+  this.renderLogoPanel();
+  this.buildContent(); 
+  this.initSecondaryNav(); 
+  this.initScrollInteraction();
+  this.initTriggersAndInteractions();
+  this.initFocusMode();
 }
 };
 
