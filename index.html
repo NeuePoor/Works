@@ -127,7 +127,6 @@ transition: background-color 0.25s ease-out;
 
 .fl-nav { display: flex; gap: 40px; }
 
-/* 核心修复：一/二级菜单共享同一份配置，去除了强行分类，确保任何端字号都完全一致 */
 .fl-nav__link { font-family: var(--header-font); font-size: var(--nav-fs); font-weight: var(--header-fw); color: #fff; text-decoration: none; transition: opacity 0.4s var(--fl-ease), filter 0.4s var(--fl-ease); }
 
 .fl-logo__gif-wrap-pc { 
@@ -161,7 +160,6 @@ transition: background-color 0.25s ease-out;
 .fl-wechat-qr { width: 100%; aspect-ratio: 1; margin: 0 auto 24px auto; }
 .fl-wechat-qr img { width: 100%; height: 100%; object-fit: contain; }
 
-/* 核心基础架构：将全局版的 secondary-track 提到移动端配置的前面，防止发生优先级错误 */
 .secondary-track { 
   position: fixed !important; top: 0; left: 0; width: 100% !important; 
   opacity: 0; pointer-events: none !important;
@@ -185,7 +183,6 @@ body.is-secondary-active .secondary-track { opacity: 1 !important; pointer-event
 }
 @keyframes fl-dot-blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1.0; } }
 
-/* PC 专属修正 */
 @media (min-width: 769px) {
     #ui-hero-special-text { display: none !important; }
     body:not(.is-secondary-active) #ui-main-grid { filter: blur(8px); opacity: 0.2; pointer-events: none; }
@@ -231,25 +228,17 @@ body.is-secondary-active .secondary-track { opacity: 1 !important; pointer-event
     
     .fl-nav { position: absolute !important; bottom: 0 !important; right: 16px !important; height: 44px !important; display: flex !important; align-items: center !important; gap: 20px !important; }
     
-    /* 核心修复：这个规则现在一劳永逸地管控主菜单和二级菜单，绝不覆写。 */
     .fl-nav__link { font-size: var(--nav-fs-m) !important; color: var(--fl-text) !important; opacity: 1 !important; filter: none !important; }
     
-    /* 核心架构修复：将 secondary-track 放于文件最末端的媒体查询中，保证宽度和位置能够正确覆盖全局版的 100% 规则 */
     .secondary-track { 
         left: 32px !important; bottom: 24px !important; top: auto !important; 
         height: 44px !important; width: calc(100% - 64px) !important; 
         transition: transform 0.4s var(--fl-ease), opacity 0.4s var(--fl-ease) !important; 
     }
     
-    /* 核心修复：为二级菜单左侧返回按钮设置绝对排版，完美对齐 44px 背景框 */
     .back-icon-link {
-        position: absolute !important;
-        left: 16px !important;
-        top: 0 !important;
-        height: 44px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
+        position: absolute !important; left: 16px !important; top: 0 !important; height: 44px !important;
+        display: flex !important; align-items: center !important; justify-content: flex-start !important;
     }
     .back-icon-link::before { font-size: var(--header-fs-m) !important; }
 
@@ -407,22 +396,40 @@ renderHeader() {
       gM.onload = () => { gM.style.opacity = "1"; text.classList.add('is-replaced'); };
       
       navContainer.innerHTML = '';
+      
+      // 核心修复：重构导航点击事件，区分手机端面板展开与合上的不同处理链路
       CONFIG.header.nav.forEach(n => {
         const a = document.createElement('a');
         a.href = n.link || '#';
         a.className = 'fl-nav__link';
         a.innerText = n.name;
-        if (n.isSecondaryTrigger) {
-          a.onclick = (e) => {
-            e.preventDefault();
-            document.body.classList.add('is-secondary-active');
-          };
-        }
+        
+        a.onclick = (e) => {
+            const p = document.getElementById('ui-logo-panel');
+            const isPanelPinned = p && p.classList.contains('is-panel-pinned');
+            
+            if (n.isSecondaryTrigger) {
+                // 如果是当前页的触发器（Works）
+                e.preventDefault();
+                if (ENGINE.isMobile() && isPanelPinned) {
+                    ENGINE.hideHero(); // 收起面板，且内部会切回二级轨道状态
+                } else {
+                    document.body.classList.add('is-secondary-active');
+                }
+            } else {
+                // 如果是外部跳转链接（Play / Me）
+                if (ENGINE.isMobile() && isPanelPinned) {
+                    e.preventDefault();
+                    ENGINE.hideHero(); // 先关闭面板
+                    // 等待关闭动画（400ms）后执行跳转，对齐 Home2.0 体验
+                    setTimeout(() => { window.location.href = n.link || '#'; }, 400);
+                }
+            }
+        };
         navContainer.appendChild(a);
       });
   }
 
-  // 二级导航返回按钮映射：移除二级激活状态，呼出通用组件
   if (backIconLink) {
       const handleOpenPrimary = (e) => {
         e.preventDefault();
@@ -432,7 +439,7 @@ renderHeader() {
       };
       
       backIconLink.onclick = handleOpenPrimary;
-      backIconLink.onmouseenter = handleOpenPrimary; // 增加悬停触发打开一级轨道
+      backIconLink.onmouseenter = handleOpenPrimary;
   }
   
   if (secondaryNavContainer) {
@@ -602,7 +609,6 @@ initFocusMode() {
   const body = document.body;
   const selectors = 'a, .fl-item-wrapper, .fl-logo__gif, .fl-info-row, .fl-nav__link, .fl-info__title, .back-icon-link, .fl-logo-link, .fl-hero-special-text, .fl-gallery-link, .fl-close-btn, .fl-logo-text';
   
-  // 核心修复：内部校验屏幕宽度，配合 CSS 媒体查询，彻底杜绝移动端的误触模糊 Bug
   document.addEventListener('mouseover', (e) => { 
     if (window.innerWidth <= 768) return;
     if (e.target.closest(selectors)) {
@@ -639,3 +645,4 @@ window.onload = () => ENGINE.start();
 </script>
 </body>
 </html>
+
