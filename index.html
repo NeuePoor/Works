@@ -59,10 +59,11 @@ transition: background-color 0.25s ease-out;
 /* ==========================================================================
    2. NATIVE CSS CURSOR SYSTEM | 原生 CSS 光标切换方案
    ========================================================================== */
-@media (min-width: 769px) {
+@media (min-width: 769px) and (min-height: 501px), (min-width: 951px) {
   *, html, body { cursor: var(--cur-default) !important; }
   
-  a, button, .fl-nav__link, .back-icon-link, .fl-logo__gif, .fl-item-wrapper, 
+  /* 核心修复：补全 .fl-logo__gif-wrap-pc，确保与 Works● 悬停切换时交互光标不会闪断 */
+  a, button, .fl-nav__link, .back-icon-link, .fl-logo__gif-wrap-pc, .fl-logo__gif-wrap-m, .fl-logo__gif, .fl-item-wrapper, 
   .fl-info-row, .fl-info__title, #trigger-wechat, .fl-close-btn, .fl-gallery-link,
   .fl-logo-text, [role="button"] { cursor: var(--cur-hover) !important; }
   
@@ -76,7 +77,7 @@ transition: background-color 0.25s ease-out;
   transition: filter 0.5s var(--fl-ease), opacity 0.5s var(--fl-ease);
 }
 
-@media (min-width: 769px) {
+@media (min-width: 769px) and (min-height: 501px), (min-width: 951px) {
     body.is-focus-mode .fl-nav__link,
     body.is-focus-mode .back-icon-link,
     body.is-focus-mode .fl-info-row,
@@ -183,7 +184,7 @@ body.is-secondary-active .secondary-track { opacity: 1 !important; pointer-event
 }
 @keyframes fl-dot-blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1.0; } }
 
-@media (min-width: 769px) {
+@media (min-width: 769px) and (min-height: 501px), (min-width: 951px) {
     #ui-hero-special-text { display: none !important; }
     body:not(.is-secondary-active) #ui-main-grid { filter: blur(8px); opacity: 0.2; pointer-events: none; }
     .secondary-track .back-icon-link { color: #fff !important; }
@@ -202,9 +203,9 @@ body.is-secondary-active .secondary-track { opacity: 1 !important; pointer-event
 .is-loaded .fl-cdn-media { opacity: 1; filter: blur(0); }
 
 /* ==========================================================================
-   7. MOBILE OVERRIDES | 手机端最高优先级覆盖
+   7. MOBILE OVERRIDES | 手机端最高优先级覆盖 (含竖屏及横屏手机)
    ========================================================================== */
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-width: 950px) and (max-height: 500px) and (orientation: landscape) {
     .fl-logo__gif-wrap-pc { display: none !important; }
     
     .fl-header__bg {
@@ -248,9 +249,9 @@ body.is-secondary-active .secondary-track { opacity: 1 !important; pointer-event
 }
 
 /* ==========================================================================
-   8. DARK MODE OVERRIDES | 手机深色模式终极覆盖
+   8. DARK MODE OVERRIDES | 手机端深色模式终极覆盖
    ========================================================================== */
-@media (max-width: 768px) and (prefers-color-scheme: dark) {
+@media (max-width: 768px) and (prefers-color-scheme: dark), (max-width: 950px) and (max-height: 500px) and (orientation: landscape) and (prefers-color-scheme: dark) {
     .fl-header__bg { background: rgba(28, 28, 30, 0.45) !important; border: 0.5px solid rgba(255, 255, 255, 0.1) !important; }
     .secondary-track .back-icon-link { color: var(--fl-text) !important; }
 }
@@ -357,7 +358,10 @@ gallery: {
 };
 
 const ENGINE = {
-isMobile() { return window.innerWidth <= 768; },
+// 核心更新：引入包含横屏特征在内的三维物理特征匹配，保证 JS 与 CSS 判断边界 100% 一致。
+isMobile() { 
+    return window.matchMedia('(max-width: 768px), (max-width: 950px) and (max-height: 500px) and (orientation: landscape)').matches; 
+},
 
 applyTypography() {
   const root = document.documentElement;
@@ -368,6 +372,7 @@ applyTypography() {
   const props = {
     '--header-font': hl.font, '--header-fw': hl.weight, '--header-fs': hl.sizePC, '--header-fs-m': hl.sizeMobile,
     '--nav-fs': CONFIG.header.nav[0].sizePC, '--nav-fs-m': CONFIG.header.nav[0].sizeMobile,
+    '--sec-nav-fs': CONFIG.header.secondary[0].sizePC, '--sec-nav-fs-m': CONFIG.header.secondary[0].sizeMobile,
     '--special-text-fs': pnl.specialText.sizePC, '--special-text-fs-m': pnl.specialText.sizeMobile,
     '--contact-fs': pnl.contactStyles.sizePC, '--contact-fs-m': pnl.contactStyles.sizeMobile,
     '--contact-gap-m': pnl.contactStyles.gapMobile || '16px',
@@ -397,7 +402,6 @@ renderHeader() {
       
       navContainer.innerHTML = '';
       
-      // 核心修复：重构导航点击事件，区分手机端面板展开与合上的不同处理链路
       CONFIG.header.nav.forEach(n => {
         const a = document.createElement('a');
         a.href = n.link || '#';
@@ -409,19 +413,16 @@ renderHeader() {
             const isPanelPinned = p && p.classList.contains('is-panel-pinned');
             
             if (n.isSecondaryTrigger) {
-                // 如果是当前页的触发器（Works）
                 e.preventDefault();
                 if (ENGINE.isMobile() && isPanelPinned) {
-                    ENGINE.hideHero(); // 收起面板，且内部会切回二级轨道状态
+                    ENGINE.hideHero();
                 } else {
                     document.body.classList.add('is-secondary-active');
                 }
             } else {
-                // 如果是外部跳转链接（Play / Me）
                 if (ENGINE.isMobile() && isPanelPinned) {
                     e.preventDefault();
-                    ENGINE.hideHero(); // 先关闭面板
-                    // 等待关闭动画（400ms）后执行跳转，对齐 Home2.0 体验
+                    ENGINE.hideHero();
                     setTimeout(() => { window.location.href = n.link || '#'; }, 400);
                 }
             }
@@ -503,7 +504,6 @@ showHeroPC(isPin = false) {
 
 hideHero() { 
     ENGINE.resetAllStates();
-    // 核心联通：面板隐藏后，强制为 body 补充二级激活状态恢复原页面级观感
     document.body.classList.add('is-secondary-active');
 },
 
@@ -516,30 +516,37 @@ initTriggersAndInteractions() {
     if(!p) return;
 
     if (lwPC) {
-        lwPC.onmouseenter = () => { if (window.innerWidth > 768 && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); };
-        lwPC.onmouseleave = () => { if (window.innerWidth > 768 && !p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); };
+        lwPC.onmouseenter = () => { if (!ENGINE.isMobile() && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); };
+        lwPC.onmouseleave = () => { if (!ENGINE.isMobile() && !p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); };
         lwPC.onclick = (e) => { 
             e.stopPropagation();
-            if (window.innerWidth <= 768) return; 
-            if (p.classList.contains('is-active') && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); else ENGINE.showHeroPC(true); 
+            if (ENGINE.isMobile()) return; 
+            ENGINE.hideHero(); 
+            setTimeout(() => { window.location.href = CONFIG.header.logo.link || '#'; }, 400);
         };
     }
     
     if (tLogo) {
-        tLogo.onmouseenter = () => { if (window.innerWidth > 768 && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); };
-        tLogo.onmouseleave = () => { if (window.innerWidth > 768 && !p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); };
+        tLogo.onmouseenter = () => { if (!ENGINE.isMobile() && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); };
+        tLogo.onmouseleave = () => { if (!ENGINE.isMobile() && !p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); };
         tLogo.onclick = (e) => { 
             e.preventDefault(); e.stopPropagation(); 
-            if (window.innerWidth <= 768) { if (p.classList.contains('is-active')) ENGINE.hideHero(); else ENGINE.showHeroMobile(); } 
-            else { if (p.classList.contains('is-active') && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); else ENGINE.showHeroPC(true); }
+            if (ENGINE.isMobile()) {
+                ENGINE.hideHero(); 
+                setTimeout(() => { window.location.href = CONFIG.header.logo.link || '#'; }, 400);
+            } else {
+                ENGINE.hideHero(); 
+                setTimeout(() => { window.location.href = CONFIG.header.logo.link || '#'; }, 400);
+            }
         };
     }
 
     if (lwM) { 
         lwM.onclick = (e) => { 
             e.stopPropagation();
-            if (window.innerWidth > 768) return; 
-            if (p.classList.contains('is-active')) ENGINE.hideHero(); else ENGINE.showHeroMobile(); 
+            if (!ENGINE.isMobile()) return; 
+            ENGINE.hideHero(); 
+            setTimeout(() => { window.location.href = CONFIG.header.logo.link || '#'; }, 400);
         };
     }
     
@@ -566,7 +573,7 @@ initScrollInteraction() {
   
   let isScrolling;
   window.addEventListener('scroll', () => {
-    if (window.innerWidth <= 768) {
+    if (ENGINE.isMobile()) {
       elements.forEach(el => el.classList.add('is-nav-hidden'));
       window.clearTimeout(isScrolling);
       isScrolling = setTimeout(() => {
@@ -610,14 +617,14 @@ initFocusMode() {
   const selectors = 'a, .fl-item-wrapper, .fl-logo__gif, .fl-info-row, .fl-nav__link, .fl-info__title, .back-icon-link, .fl-logo-link, .fl-hero-special-text, .fl-gallery-link, .fl-close-btn, .fl-logo-text';
   
   document.addEventListener('mouseover', (e) => { 
-    if (window.innerWidth <= 768) return;
+    if (ENGINE.isMobile()) return;
     if (e.target.closest(selectors)) {
       body.classList.add('is-focus-mode');
     }
   });
   
   document.addEventListener('mouseout', (e) => { 
-    if (window.innerWidth <= 768) return;
+    if (ENGINE.isMobile()) return;
     if (!e.relatedTarget || !e.relatedTarget.closest(selectors)) {
       body.classList.remove('is-focus-mode');
     }
