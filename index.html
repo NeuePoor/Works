@@ -76,7 +76,6 @@ transition: background-color 0.25s ease-out;
 }
 
 @media (min-width: 769px) and (min-height: 501px), (min-width: 951px) {
-    /* Focus 触发后的全局模糊状态 */
     body.is-focus-mode .fl-nav__link,
     body.is-focus-mode .back-icon-link,
     body.is-focus-mode .fl-info-row,
@@ -281,7 +280,7 @@ body.is-secondary-active .secondary-track { opacity: 1 !important; pointer-event
 </div>
 
 <header class="fl-header" id="ui-header">
-    <a href="javascript:void(0)" class="fl-logo-text" id="ui-logo-text">Foo</a>
+    <a href="https://fo.neuepoor.com" class="fl-logo-text" id="ui-logo-text">Foo</a>
     <nav class="fl-nav" id="ui-nav"></nav>
 </header>
 
@@ -356,8 +355,15 @@ gallery: {
 };
 
 const ENGINE = {
+// 三维坐标精准适配，包含手机横屏
 isMobile() { 
     return window.matchMedia('(max-width: 768px), (max-width: 950px) and (max-height: 500px) and (orientation: landscape)').matches; 
+},
+
+// 公共安全交接判断，防止菜单抖动
+isSafeHandoff(to) {
+    if (!to || !(to instanceof Element)) return false;
+    return !!(to.closest('#ui-header') || to.closest('#ui-logo-panel') || to.closest('#ui-logo-gif-wrap-pc') || to.closest('#ui-secondary-header'));
 },
 
 applyTypography() {
@@ -390,7 +396,6 @@ renderHeader() {
   
   if (gPC && gM && text && navContainer) {
       text.innerText = CONFIG.header.logo.text;
-      text.href = "javascript:void(0)"; // 彻底移除文字链接行为，变更为纯 UI 触发器
       
       gPC.src = CONFIG.header.logo.gif;
       gM.src = CONFIG.header.logo.gif;
@@ -428,32 +433,30 @@ renderHeader() {
       });
   }
 
-  // 核心解耦与防闪烁逻辑注入
+  // === 核心修复1：Works● 的解耦闭环交互，带有防闪烁安全交接 ===
   if (backIconLink) {
         const handleOpenPinned = (e) => {
             e.preventDefault();
             document.body.classList.remove('is-secondary-active');
             if (ENGINE.isMobile()) ENGINE.showHeroMobile();
-            else ENGINE.showHeroPC(true);
+            else ENGINE.showHeroPC(true); // PC 端点击锁定
         };
         const handleOpenHover = (e) => {
             e.preventDefault();
             if (!ENGINE.isMobile()) {
                 document.body.classList.remove('is-secondary-active');
-                ENGINE.showHeroPC(false);
+                const p = document.getElementById('ui-logo-panel');
+                if (p && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); // 仅悬停展开
             }
         };
         const handleLeaveHover = (e) => {
-            if (!ENGINE.isMobile()) {
-                const p = document.getElementById('ui-logo-panel');
-                if (p && !p.classList.contains('is-panel-pinned')) {
-                    // 防闪烁锁：如果鼠标去向是一级菜单内的元素，则不关闭
-                    if (e.relatedTarget && (e.relatedTarget.closest('#ui-header') || e.relatedTarget.closest('#ui-logo-gif-wrap-pc') || e.relatedTarget.closest('#ui-logo-text'))) {
-                        return;
-                    }
-                    ENGINE.hideHero();
-                }
-            }
+            if (ENGINE.isMobile()) return;
+            const p = document.getElementById('ui-logo-panel');
+            if (p && p.classList.contains('is-panel-pinned')) return; // 被锁定则忽略
+            
+            // 防抖：只要去的方向依然是导航栏相关的组件，就属于安全交接，不关闭面板
+            if (ENGINE.isSafeHandoff(e.relatedTarget)) return; 
+            ENGINE.hideHero();
         };
 
         backIconLink.onclick = handleOpenPinned;
@@ -534,51 +537,55 @@ initTriggersAndInteractions() {
     const header = document.getElementById('ui-header');
     if(!p) return;
 
-    // 统一处理悬停离开的关闭逻辑，确保多组件切换无缝衔接
-    const handlePrimaryLeave = (e) => {
+    // 核心离开检测函数：同样应用于一级菜单离开的情况
+    const handleHoverOut = (e) => {
         if (ENGINE.isMobile()) return;
         if (p.classList.contains('is-panel-pinned')) return;
-        if (e.relatedTarget && (e.relatedTarget.closest('#ui-logo-text') || e.relatedTarget.closest('#ui-logo-gif-wrap-pc') || e.relatedTarget.closest('#ui-header'))) {
-            return;
-        }
+        if (ENGINE.isSafeHandoff(e.relatedTarget)) return;
         ENGINE.hideHero();
     };
 
-    // 核心改造：将 Logo GIF 和文字改造为纯正的开关 Toggle
+    // === 核心修复2：彻底剥离 Logo 外链逻辑，将其变为纯粹的面板 Toggle 开关 ===
+    const handleLogoToggleClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (ENGINE.isMobile()) {
+            if (p.classList.contains('is-active')) ENGINE.hideHero();
+            else ENGINE.showHeroMobile();
+        } else {
+            if (p.classList.contains('is-active') && p.classList.contains('is-panel-pinned')) ENGINE.hideHero();
+            else ENGINE.showHeroPC(true); // 点击锁定
+        }
+    };
+
     if (lwPC) {
         lwPC.onmouseenter = () => { if (!ENGINE.isMobile() && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); };
-        lwPC.onmouseleave = handlePrimaryLeave;
-        lwPC.onclick = (e) => { 
-            e.stopPropagation();
-            if (ENGINE.isMobile()) return; 
-            if (p.classList.contains('is-active') && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); else ENGINE.showHeroPC(true); 
-        };
+        lwPC.onmouseleave = handleHoverOut;
+        lwPC.onclick = handleLogoToggleClick;
     }
     
+    // 给整个菜单加上离开监听，确保完美收回
+    if (header) {
+        header.onmouseleave = handleHoverOut;
+    }
+
     if (tLogo) {
         tLogo.onmouseenter = () => { if (!ENGINE.isMobile() && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); };
-        tLogo.onmouseleave = handlePrimaryLeave;
-        tLogo.onclick = (e) => { 
-            e.preventDefault(); e.stopPropagation(); 
-            if (ENGINE.isMobile()) { if (p.classList.contains('is-active')) ENGINE.hideHero(); else ENGINE.showHeroMobile(); } 
-            else { if (p.classList.contains('is-active') && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); else ENGINE.showHeroPC(true); }
-        };
+        tLogo.onmouseleave = handleHoverOut;
+        tLogo.onclick = handleLogoToggleClick;
     }
 
     if (lwM) { 
-        lwM.onclick = (e) => { 
-            e.stopPropagation();
-            if (!ENGINE.isMobile()) return; 
-            if (p.classList.contains('is-active')) ENGINE.hideHero(); else ENGINE.showHeroMobile(); 
-        };
+        lwM.onclick = handleLogoToggleClick; 
     }
     
-    if (header) {
-        header.onmouseleave = handlePrimaryLeave;
+    // === 核心修复3：点击空白区域关闭一级菜单 ===
+    if (p) { 
+        p.onclick = (e) => { 
+            // 确保只点击在 Panel 自身的空白处，没有点击到内容层才关闭
+            if (e.target === p && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); 
+        }; 
     }
-    
-    // 空白区域点击关闭逻辑保持稳定
-    if (p) { p.onclick = (e) => { if (e.target === p && p.classList.contains('is-panel-pinned')) ENGINE.hideHero(); }; }
     if (closeBtn) { closeBtn.onclick = (e) => { e.stopPropagation(); ENGINE.hideHero(); }; }
 },
 
@@ -599,20 +606,30 @@ initScrollInteraction() {
     document.getElementById('ui-secondary-header')
   ].filter(el => el !== null);
   
-  // Directional Scroll 同步 Home2.0 逻辑
   let lastScrollY = window.scrollY || 0;
+  let scrollStopTimer;
+
+  // === 核心修复4：完美整合方向性隐藏 + 滚动静止自动显示 ===
   window.addEventListener('scroll', () => {
     if (ENGINE.isMobile()) {
       const currentScrollY = window.scrollY;
       
+      // 1. 方向判断：向下滑且超出阈值时隐藏
       if (currentScrollY > lastScrollY && currentScrollY > 50) {
           elements.forEach(el => el.classList.add('is-nav-hidden'));
       } 
-      else if (currentScrollY < lastScrollY || currentScrollY <= 50) {
+      // 反之，向上回滚立刻出现
+      else {
           elements.forEach(el => el.classList.remove('is-nav-hidden'));
       }
       
       lastScrollY = currentScrollY;
+
+      // 2. 静止补偿：无论滑哪，只要手离开屏幕停下 250ms，必然显现菜单
+      window.clearTimeout(scrollStopTimer);
+      scrollStopTimer = setTimeout(() => {
+          elements.forEach(el => el.classList.remove('is-nav-hidden'));
+      }, 250);
     }
   }, { passive: true });
 },
@@ -623,7 +640,9 @@ buildContent() {
     const rows = sec.content.split('<br>').map(row => `<span class="fl-info-row">${row}</span>`).join('');
     return `<div class="fl-info fl-reveal" style="grid-column: span ${sec.span}"><b class="fl-info__title">${sec.title}</b>${rows}</div>`;
   }).join('');
+  
   const galleryHTML = CONFIG.gallery.items.map(item => `<div class="fl-item-wrapper fl-reveal" style="grid-column: span ${item.span || 12}">${this.renderMedia(item.src)}</div>`).join('');
+  
   grid.innerHTML = infoHTML + galleryHTML;
   this.initReveal();
   
@@ -649,7 +668,7 @@ renderMedia(src) { return `<div class="fl-cdn-container"><img class="fl-cdn-medi
 initFocusMode() {
   const body = document.body;
   
-  // 保持了 1.8.1 中纯净的 Focus 模式机制，未对 Gallery 赋予主动触发权
+  // Gallery (.fl-item-wrapper) 不包含在触发源中，不干扰主体功能
   const selectors = 'a, .fl-logo__gif, .fl-info-row, .fl-nav__link, .fl-info__title, .back-icon-link, .fl-logo-link, .fl-hero-special-text, .fl-gallery-link, .fl-close-btn, .fl-logo-text';
   
   document.addEventListener('mouseover', (e) => { 
