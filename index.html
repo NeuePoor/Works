@@ -82,7 +82,7 @@ transition: background-color 0.25s ease-out;
     body.is-focus-mode .fl-info__title,
     body.is-focus-mode .fl-cdn-container,
     body.is-focus-mode .fl-hero-special-text,
-    body.is-focus-mode .fl-contact-row,
+    body.is-focus-mode .fl-gallery-link,
     body.is-focus-mode .fl-close-btn,
     body.is-focus-mode .fl-logo-text {
       filter: blur(8px) !important;
@@ -94,7 +94,6 @@ transition: background-color 0.25s ease-out;
     body.is-focus-mode .fl-info-row:hover,
     body.is-focus-mode .fl-info__title:hover,
     body.is-focus-mode .fl-hero-special-text:hover,
-    body.is-focus-mode .fl-contact-row:hover,
     body.is-focus-mode .fl-gallery-link:hover,
     body.is-focus-mode .fl-close-btn:hover,
     body.is-focus-mode .fl-logo-text:hover {
@@ -168,6 +167,19 @@ body.is-secondary-active .fl-logo-panel {
     opacity: 0 !important; pointer-events: none !important; 
 }
 body.is-secondary-active .secondary-track { opacity: 1 !important; pointer-events: auto !important; }
+
+/* 修复悬停闪烁：增加预览专用权重样式，保持透明占位层截获鼠标事件，防止陷入无限判定循环 */
+body.is-secondary-active.is-preview-action .fl-header:not(.secondary-track),
+body.is-secondary-active.is-preview-action .fl-logo-panel {
+    opacity: 1 !important; pointer-events: auto !important;
+}
+body.is-secondary-active.is-preview-action .fl-logo__gif-wrap-pc,
+body.is-secondary-active.is-preview-action .fl-logo__gif-wrap-m {
+    opacity: 1 !important; pointer-events: none !important;
+}
+body.is-secondary-active.is-preview-action .secondary-track {
+    opacity: 0 !important; z-index: 4000 !important; pointer-events: auto !important;
+}
 
 #ui-main-grid { transition: filter 0.6s var(--fl-ease), opacity 0.6s var(--fl-ease); }
 
@@ -425,25 +437,32 @@ renderHeader() {
   if (backIconLink) {
         const handleOpenPinned = (e) => {
             e.preventDefault();
+            document.body.classList.remove('is-preview-action'); // 点按后彻底解除预览占位
             document.body.classList.remove('is-secondary-active');
-            if (ENGINE.isMobile()) ENGINE.showHeroMobile();
-            else ENGINE.showHeroPC(true); // PC 端点击锁定
-        };
-        const handleOpenHover = (e) => {
-            e.preventDefault();
-            if (!ENGINE.isMobile()) {
-                document.body.classList.remove('is-secondary-active');
-                const p = document.getElementById('ui-logo-panel');
-                if (p && !p.classList.contains('is-panel-pinned')) ENGINE.showHeroPC(false); // 仅悬停展开
+            if (ENGINE.isMobile()) {
+                 ENGINE.showHeroMobile();
+            } else {
+                 ENGINE.showHeroPC(true); // PC 端点击锁定
             }
         };
+        
+        const handleOpenHover = (e) => {
+            if (ENGINE.isMobile()) return;
+            e.preventDefault();
+            const p = document.getElementById('ui-logo-panel');
+            if (p && !p.classList.contains('is-panel-pinned')) {
+                document.body.classList.add('is-preview-action'); // 开启透明占位预览层
+                ENGINE.showHeroPC(false); // 仅悬停展开
+            }
+        };
+        
         const handleLeaveHover = (e) => {
             if (ENGINE.isMobile()) return;
             const p = document.getElementById('ui-logo-panel');
             if (p && p.classList.contains('is-panel-pinned')) return; // 被锁定则忽略
             
-            // 防抖：只要去的方向依然是导航栏相关的组件，就属于安全交接，不关闭面板
-            if (ENGINE.isSafeHandoff(e.relatedTarget)) return; 
+            // 严格遵守指令：移出 Works● 物理区域立刻关闭
+            document.body.classList.remove('is-preview-action');
             ENGINE.hideHero();
         };
 
@@ -539,6 +558,12 @@ initTriggersAndInteractions() {
     const handleLogoClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
+        
+        // 防误触：仅在面板完全锁定打开（即已点按 Works●）的情况下，才允许触发 Logo 跳转
+        if (!p.classList.contains('is-panel-pinned')) {
+            return; 
+        }
+        
         ENGINE.hideHero();
         setTimeout(() => { window.location.href = CONFIG.header.logo.link || '#'; }, 400);
     };
