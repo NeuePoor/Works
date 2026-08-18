@@ -4,7 +4,7 @@
     "title": "Project A",
     "year": 2025,
     "cover": "https://xxx.png",
-    "url": "/projects/2025/25-03-001-nike-acg.html",
+    "url": "/projects/2018/18-12-001.html",
     "tags": ["branding"]
   }
 ] 
@@ -24,17 +24,17 @@
     "title": "Project A",
     "year": 2025,
     "cover": "https://xxx.png",
-    "url": "/projects/2025/25-03-001-nike-acg.html",
+    "url": "/projects/2018/18-12-001.html",
     "tags": ["branding"]
   }
 ] 
 [
   {
     "id": "nike-acg-001",
-    "title": "Project A",
-    "year": 2025,
+    "title": "Panting Hero",
+    "year": 2018,
     "cover": "https://xxx.png",
-    "url": "/projects/2025/25-03-001-nike-acg.html",
-    "tags": ["branding"]
+    "url": "/projects/2018/18-12-001.html",
+    "tags": ["Branding"]
   }
 ] 
